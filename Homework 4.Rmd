@@ -1,0 +1,402 @@
+---
+title: "Data Algorithms Homework 4"
+author: "Austin Vanderlyn ajl745"
+date: "11/29/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Data for Q1 and Q2
+```{r}
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms/Data")
+liver = read.csv("liver.csv", header = TRUE)
+library(DescTools)
+library(ResourceSelection)
+```
+
+
+### Question 1
+
+##### The liver data set is a subset of the ILPD (Indian Liver Patient Dataset) data set. It contains the first 10 variables described on the UCI Machine Learning Repository and a LiverPatient variable (indicating whether or not the individual is a liver patient. People with active liver disease are coded as LiverPatient=1 and people without disease are coded LiverPatient=0) for adults in the data set. Adults here are defined to be individuals who are at least 18 years of age. It is possible that there will be different significant predictors of being a liver patient for adult females and adult males.
+
+#### 1.a For only females in the data set, find and specify the best set of predictors via stepwise selection with AIC criteria for a logistic regression model predicting whether a female is a liver patient. 
+
+Construct logistic regression model;
+```{r}
+liverF = liver[which(liver$Gender == "Female"),]
+glm.null.F = glm(LiverPatient ~ 1, data = liverF, family = "binomial")
+glm.full.F = glm(LiverPatient ~ Age+TB+DB+Alkphos+Alamine+Aspartate+TP+ALB, data = liverF, family = "binomial")
+step.modelF.AIC = step(glm.null.F, scope = list(upper=glm.full.F), direction = "both", test = "Chisq", trace = F)
+summary(step.modelF.AIC)
+```
+Based on the results from the stepwise selection based on AIC, we should include the predictors DB and Aspartate.
+
+
+#### 1.b Comment on the significance of parameter estimates under significance level alpha=0.1, what HosmerLemeshow’s test tells us about goodness of fit, and point out any issues with diagnostics by checking residual plots and cook’s distance plot (with cut-off 0.25).
+
+Check significance of parameters;
+```{r}
+summary(step.modelF.AIC)
+```
+
+If the significance level is set to alpha = 0.1, then both of the terms selected by the AIC stepwise model (DB and Aspartate) are significant. 
+
+Run HosmerLemeshow’s test;
+```{r}
+hoslem.test(step.modelF.AIC$y, fitted(step.modelF.AIC), g=10)
+```
+The results from the HosmerLemeshow’s test suggest that the model is a good fit and that we should not reject the null that the model is adequate.
+
+Check residuals;
+```{r}
+resid.d<-residuals(step.modelF.AIC, type = "deviance")
+resid.p<-residuals(step.modelF.AIC, type = "pearson")
+std.res.d<-residuals(step.modelF.AIC, type = "deviance")/sqrt(1 - hatvalues(step.modelF.AIC))
+std.res.p <-residuals(step.modelF.AIC, type = "pearson")/sqrt(1 - hatvalues(step.modelF.AIC))
+
+dev.new(width = 1000, height = 1000, unit = "px")
+par(mfrow=c(1,2))
+plot(std.res.d[step.modelF.AIC$model$LiverPatient==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. deviance residuals", xlab = "ID")
+points(std.res.d[step.modelF.AIC$model$LiverPatient==1], col = "blue")
+
+plot(std.res.p[step.modelF.AIC$model$LiverPatient==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. Pearson residuals", xlab = "ID")
+points(std.res.p[step.modelF.AIC$model$LiverPatient==1], col = "blue")
+
+```
+
+No clear pattern can be detected in the residual plots, so linearity assumption is valid.
+
+
+Check Cook's distance;
+```{r}
+dev.new(width = 1000, height = 1000, unit = "px")
+plot(step.modelF.AIC, which = 4, id.n = 5)
+```
+If the cutoff for Cook's distance is set at 0.25, then there are no points that exceed the cutoff. 
+
+
+#### 1.c Interpret relationships between predictors in the final model and the odds of an adult female being a liver patient. (based on estimated Odds Ratio). 
+
+Calculate Odds Ratio;
+```{r}
+round(exp(step.modelF.AIC$coefficients),3)
+```
+
+The odds of a female being a liver patient increase by a factor of 2.572 with a 1 unit increase in DB, assuming Aspartate is held constant. 
+
+The odds of a female being a liver patient increase by a factor of 1.011 with a 1 unit increase in Aspartate, assuming DB is held constant. 
+
+Thus the most significant predictors for whether or not a female patient is a liver patient with this model are DB and Aspartate.
+
+```{r}
+summary(step.modelF.AIC)
+```
+
+Final Model: log(p/(1-p)) = -0.325 + 0.945*DB + 0.011*Aspartate
+
+
+### Question 2
+
+#### Repeat exercise 1 for males. In addition to the previous questions, also d) comment on how the models for adult females and adult males differ. Use significance level alpha=0.1
+
+#### 2.a For only males in the data set, find and specify the best set of predictors via stepwise selection with AIC criteria for a logistic regression model predicting whether a male is a liver patient.
+
+Construct logistic regression model;
+```{r}
+liverM = liver[which(liver$Gender == "Male"),]
+glm.null.M = glm(LiverPatient ~ 1, data = liverM, family = "binomial")
+glm.full.M = glm(LiverPatient ~ Age+TB+DB+Alkphos+Alamine+Aspartate+TP+ALB, data = liverM, family = "binomial")
+step.modelM.AIC = step(glm.null.M, scope = list(upper=glm.full.M), direction = "both", test = "Chisq", trace = F)
+summary(step.modelM.AIC)
+```
+
+Based on the results from the stepwise selection based on AIC, we should include the predictors DB, Alamine, Age, and Alkphos.
+
+
+#### 2.b Comment on the significance of parameter estimates under significance level alpha=0.1, what HosmerLemeshow’s test tells us about goodness of fit, and point out any issues with diagnostics by checking residual plots and cook’s distance plot (with cut-off 0.25).
+
+If the significance level is set to alpha = 0.1, then all of the terms selected by the AIC stepwise model (DB, Alamine, Age, and Alkphos) are significant. 
+
+Run HosmerLemeshow’s test;
+```{r}
+hoslem.test(step.modelM.AIC$y, fitted(step.modelM.AIC), g=10)
+```
+
+The results from the HosmerLemeshow’s test suggest that the model is a good fit and that we should not reject the null that the model is adequate.
+
+Check residuals;
+```{r}
+resid.d<-residuals(step.modelM.AIC, type = "deviance")
+resid.p<-residuals(step.modelM.AIC, type = "pearson")
+std.res.d<-residuals(step.modelM.AIC, type = "deviance")/sqrt(1 - hatvalues(step.modelM.AIC))
+std.res.p <-residuals(step.modelM.AIC, type = "pearson")/sqrt(1 - hatvalues(step.modelM.AIC))
+
+dev.new(width = 1000, height = 1000, unit = "px")
+par(mfrow=c(1,2))
+plot(std.res.d[step.modelM.AIC$model$LiverPatient==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. deviance residuals", xlab = "ID")
+points(std.res.d[step.modelM.AIC$model$LiverPatient==1], col = "blue")
+
+plot(std.res.p[step.modelM.AIC$model$LiverPatient==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. Pearson residuals", xlab = "ID")
+points(std.res.p[step.modelM.AIC$model$LiverPatient==1], col = "blue")
+
+```
+No clear pattern can be detected in the residual plots, so linearity assumption is valid.
+
+
+Check Cook's distance;
+```{r}
+dev.new(width = 1000, height = 1000, unit = "px")
+plot(step.modelM.AIC, which = 4, id.n = 5)
+```
+
+If the cutoff for Cook's distance is set at 0.25, then there is at least one point that exceeds the cutoff, we can check exactly which ones;
+
+```{r}
+inf.id.2 = which(cooks.distance(step.modelM.AIC)>0.25)
+inf.id.2
+```
+
+Points 86 are outside the cook's distance cutoff.
+
+Refit model without point 86;
+
+```{r}
+liverM = liver[which(liver$Gender == "Male"),]
+glm.null.M = glm(LiverPatient ~ 1, data = liverM[-inf.id.2, ], family = "binomial")
+glm.full.M = glm(LiverPatient ~ Age+TB+DB+Alkphos+Alamine+Aspartate+TP+ALB, data = liverM[-inf.id.2, ], family = "binomial")
+step.modelM.AIC = step(glm.null.M, scope = list(upper=glm.full.M), direction = "both", test = "Chisq", trace = F)
+summary(step.modelM.AIC)
+```
+
+Removing the point does change the order and beta values of the predictors slightly, but we still have the same 4 variables.
+
+#### 2.c Interpret relationships between predictors in the final model and the odds of an adult male being a liver patient. (based on estimated Odds Ratio).
+
+Calculate Odds Ratio;
+```{r}
+round(exp(step.modelM.AIC$coefficients),3)
+```
+
+The odds of a male being a liver patient increase by a factor of 1.669 with a 1 unit increase in DB, assuming other predictors are held constant. 
+
+The odds of a male being a liver patient increase by a factor of 1.016 with a 1 unit increase in Alamine, assuming other predictors are held constant. 
+
+The odds of a male being a liver patient increase by a factor of 1.004 with a 1 unit increase in Alkphos, assuming other predictors are held constant. 
+
+The odds of a male being a liver patient increase by a factor of 1.021 with a 1 unit increase in Age, assuming other predictors are held constant. 
+
+Thus the most important predictors for whether or not a male is a liver patient based on this model are DB, Alamine, Alkphos, and Age.
+
+
+```{r}
+summary(step.modelM.AIC)
+```
+
+Final Model: log(p/(1-p)) = -1.903 + 0.573*DB + 0.016*Alamine + 0.004*Alkphos + .020*Age
+
+#### 2.d comment on how the models for adult females and adult males differ. Use significance level alpha=0.1
+
+Females have two fewer significant predictors than males do, and the only one that they share is DB, though DB seems to have a bigger impact for females than it does for males.
+
+
+### Question 3
+
+#### Use the sleep data set which originates from http://lib.stat.cmu.edu/datasets/sleep. maxlife10 is 0 if the species maximum life span is less than 10 years and 1 if its maximum life span is greater than or equal to 10 years.Consider finding the best logistic model for predicting the probability that a species' maximum lifespan will be at least 10 years. Consider all 6 variables as candidates (do not include species) and two index variables of them are categorical in nature. Treat two index variables as categorical variables (e.g. ignore the fact that they are ordinal). Use significance level alpha=0.1
+
+Read in data;
+```{r}
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms/Data")
+sleep = read.csv("sleep.csv", header = TRUE)
+```
+
+#### 3.a First find and specify the best set of predictors via stepwise selection with AIC criteria.
+
+Build Logistic regression model;
+```{r}
+glm.null.sleep1 = glm(maxlife10 ~ 1, data = sleep, family = "binomial")
+glm.full.sleep1 = glm(maxlife10 ~ bodyweight+brainweight+totalsleep+gestationtime+as.factor(predationindex)+ as.factor(sleepexposureindex), data = sleep, family = "binomial")
+step.sleep1 = step(glm.null.sleep1, scope = list(upper = glm.full.sleep1), direction = "both", test = "Chisq", trace = F)
+summary(step.sleep1)
+```
+
+The predictors selected by the AIC model are brainweight, totalsleep, sleepexposureindex, and predationindex.
+
+
+#### 3.b (marked as "d" on hw sheet) Comment on the significance of parameter estimates, what Hosmer-Lemeshow’s test tells us about goodness of fit, and point out any issues with diagnostics by checking residual plots and cook’s distance plot. Do not remove influential points but just make comments on suspicious observations.
+
+With our alpha set to 0.10, the only significant predictor is sleepexposureindex2.
+
+Hosmer-Lemeshow's Tes
+```{r}
+hoslem.test(step.sleep1$y, fitted(step.sleep1), g=10)
+```
+
+The Hosmer-Lemeshow test result indicates that we should not reject the null and that the model is an adequate fit. 
+
+Residual Plots;
+```{r}
+resid.d<-residuals(step.sleep1, type = "deviance")
+resid.p<-residuals(step.sleep1, type = "pearson")
+std.res.d<-residuals(step.sleep1, type = "deviance")/sqrt(1 - hatvalues(step.sleep1))
+std.res.p <-residuals(step.sleep1, type = "pearson")/sqrt(1 - hatvalues(step.sleep1))
+
+dev.new(width = 1000, height = 1000, unit = "px")
+par(mfrow=c(1,2))
+plot(std.res.d[step.sleep1$model$maxlife10==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. deviance residuals", xlab = "ID")
+points(std.res.d[step.sleep1$model$maxlife10==1], col = "blue")
+
+plot(std.res.p[step.sleep1$model$maxlife10==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. Pearson residuals", xlab = "ID")
+points(std.res.p[step.sleep1$model$maxlife10==1], col = "blue")
+
+```
+
+There is no clear pattern to the residuals, so the linearity assumption is valid.
+
+
+Check Cook's distance;
+```{r}
+dev.new(width = 1000, height = 1000, unit = "px")
+plot(step.sleep1, which = 4, id.n = 5)
+```
+
+There appear to be two influential points, we can further figure out exactly which ones;
+```{r}
+inf.id.3 = which(cooks.distance(step.sleep1)>0.25)
+inf.id.3
+```
+Points 35 and 40 are points of concern, but I won't remove them as per question instructions.
+
+
+### 3.c (marked as b on homework sheet) Interpret what the model tells us about relationships between the predictors and the odds of a species' maximum lifespan being at least 10 years
+
+```{r}
+summary(step.sleep1)
+```
+
+Odds Ratios
+```{r}
+round(exp(step.sleep1$coefficients),3)
+```
+
+Since sleepexposureindex2 is the only significant predictor, that's the only one we care about the odds ratio for, and we can see that the odds of a species' maximum lifespan being at least 10 years increase by a factor of 1.481e+02 for a 1 unit increase in sleepexposureindex2.
+
+Thus, based on this model, the most significant predictor of whether a species lifespan is more than ten years is sleepexposureindex2.
+
+
+
+### Question 4
+
+#### The index variables in the data set are ordinal, meaning they are categorical and they have a natural ordering. If we treat an index variable as a continuous variable, this will imply a linear change as the index changes. Repeat Exercise 3 by treating two index variables as continuous variables. Use significance level alpha=0.1
+
+#### 4.a First find and specify the best set of predictors via stepwise selection with AIC criteria.
+
+Build logistic regression model;
+```{r}
+glm.null.sleep2 = glm(maxlife10 ~ 1, data = sleep, family = "binomial")
+glm.full.sleep2 = glm(maxlife10 ~ bodyweight+brainweight+totalsleep+gestationtime+predationindex+sleepexposureindex, data = sleep, family = "binomial")
+step.sleep2 = step(glm.null.sleep2, scope = list(upper=glm.full.sleep2), direction = "both", test = "Chisq", trace = F)
+summary(step.sleep2)
+```
+
+The predictors selected by the stepwise AIC model are brainweight, totalsleep, sleepexposureindex, and predationindex.
+
+
+#### 4.b Comment on the significance of parameter estimates, what Hosmer-Lemeshow’s test tells us about goodness of fit, and point out any issues with diagnostics by checking residual plots and cook’s distance plot. Do not remove influential points but just make comments on suspicious observations.
+
+Significance of parameter estimates;
+```{r}
+summary(step.sleep2)
+```
+
+With a significance level set to alpha = 0.1, the stepwise model shows that brainweight, totalsleep, sleepexposureindex and predationindex are significant predictors. 
+
+
+Run HosmerLemeshow’s test;
+```{r}
+hoslem.test(step.sleep2$y, fitted(step.sleep2), g=10)
+```
+
+With a very high p-value for the Hosmer-Lemeshow test, we do not reject the null that the model is an adequate fit.
+
+Check residuals;
+```{r}
+resid.d<-residuals(step.sleep2, type = "deviance")
+resid.p<-residuals(step.sleep2, type = "pearson")
+std.res.d<-residuals(step.sleep2, type = "deviance")/sqrt(1 - hatvalues(step.sleep2))
+std.res.p <-residuals(step.sleep2, type = "pearson")/sqrt(1 - hatvalues(step.sleep2))
+
+dev.new(width = 1000, height = 1000, unit = "px")
+par(mfrow=c(1,2))
+plot(std.res.d[step.sleep2$model$maxlife10==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. deviance residuals", xlab = "ID")
+points(std.res.d[step.sleep2$model$maxlife10==1], col = "blue")
+
+plot(std.res.p[step.sleep2$model$maxlife10==0], col = "red", 
+     ylim = c(-3.5,3.5), ylab = "std. Pearson residuals", xlab = "ID")
+points(std.res.p[step.sleep2$model$maxlife10==1], col = "blue")
+
+```
+
+There does not seem to be any clear pattern to the residual plots, so the linearity assumption is valid.
+
+
+Check Cook's distance;
+```{r}
+dev.new(width = 1000, height = 1000, unit = "px")
+plot(step.sleep2, which = 4, id.n = 5)
+```
+
+The instructions are to not remove the influential points, but we can identify and point out the specific points, there appear to be four.
+
+Identify influential points;
+```{r}
+inf.id.4 = which(cooks.distance(step.sleep2)>0.25)
+inf.id.4
+```
+
+#### 4.c Interpret what the model tells us about relationships between the predictors and the odds of a species' maximum lifespan being at least 10 years
+
+```{r}
+summary(step.sleep2)
+```
+
+Calculate Odds Ratios;
+```{r}
+round(exp(step.sleep2$coefficients),3)
+```
+
+The odds of a species' maximum lifespan being at least 10 years increase by a factor of 1.062 for a 1 unit increase in brainweight.
+
+The odds of a species' maximum lifespan being at least 10 years increase by a factor of 1.433 for a 1 unit increase in totalsleep.
+
+The odds of a species' maximum lifespan being at least 10 years increase by a factor of 83.188 for a 1 unit increase in sleepexposureindex.
+
+The odds of a species' maximum lifespan being at least 10 years increase by a factor of 0.034 for a 1 unit increase in predationindex.
+
+Thus we can say the significant predictors for whether or not a species maximum lifespan is at least ten years are brainweight, totalsleep, sleepexposureindex, and predationindex.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

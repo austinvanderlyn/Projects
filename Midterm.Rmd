@@ -1,0 +1,224 @@
+---
+title: "Midterm R File"
+author: "Austin Vanderlyn ajl745"
+date: "10/4/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Read in data
+
+```{r}
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms/Data")
+birthweight = read.csv("birthweight.csv")
+View(birthweight)
+str(birthweight)
+library(tidyverse)
+library(MASS)
+library(car)
+library(DescTools)
+birthweight$Black=as.factor(birthweight$Black)
+birthweight$Married=as.factor(birthweight$Married)
+birthweight$Boy=as.factor(birthweight$Boy)
+birthweight$MomSmoke=as.factor(birthweight$MomSmoke)
+birthweight$Ed=as.factor(birthweight$Ed)
+
+```
+
+## Exercise 1
+
+### 1.a Generate Boxplot for infant birth weight (Weight) and comment on the general features of the distribution. Generate a normal QQ-plot and perform Shapiro-wilk test to check whether normality is a reasonable assumption for Weight. Make a conclusion.
+
+Boxplot for infant birth weight
+
+```{r}
+boxplot(birthweight$Weight)
+```
+
+There are a few more outliers on the negative end but other than that it appears to be a very normal distribution, with the mean centered close to the middle of the IQR.
+
+QQ plot
+
+```{r}
+qqnorm(birthweight$Weight)
+```
+
+Similar to the boxplot, other than a handful of outliers on the negative side, the data appear to be very normally distributed
+
+Shapiro-Wilk Test
+
+```{r}
+shapiro.test(birthweight$Weight)
+```
+
+The result of the Shapiro test is not significant, so we do not reject the null that the data is normally distributed.
+
+Both the quantitative and qualitative analysis indicate the distribution is normal, so that will be the conclusion.
+
+### 1.b Generate a boxplot of Weight by MomSmoke and compare infant birth weights between smoking levels.
+
+```{r}
+boxplot(Weight ~ MomSmoke, data = birthweight)
+```
+
+In general, we can see in the boxplot a trend towards lower birth weight for smoking mothers. The minimum birth weight for smoking mothers does appear to be slightly higher than nonsmoking, but other than that, the maximum, interquartile range, and mean birth weight are all lower for smoking mothers. There also appears to be a smaller IQR for smoking mothers.
+
+### 1.c For each level in MomSmoke, perform Shapiro-wilk test for checking the Normality of Weight. Make a conclusion.
+
+Separate smoking status into groups
+
+```{r}
+nonsmoking = subset(birthweight, MomSmoke == "0")
+smoking = subset(birthweight, MomSmoke == "1")
+```
+
+Shapiro tests for smoking vs. nonsmoking
+
+```{r}
+shapiro.test(smoking$Weight)
+
+shapiro.test(nonsmoking$Weight)
+```
+
+Neither of the smoking status groups showed significance in the Shapiro test, so we do not reject the null that both groups have normal distribution, in addition to the overall normal distribution of the entire data set.
+
+## Exercise 2
+
+### Perform a hypothesis test of whether infants from smoking moms have different weights than infants from nonsmoking moms. Which test do you choose? Use the answer in Exercise 1 for choosing the proper test. Specify null and alternative hypotheses and state your conclusion
+
+Our hypothesis will be the following;
+
+Null: the mean of birthweights from smoking mothers is not significantly different from the mean birthweight of nonsmoking mothers
+
+Alternate: the mean of birthweights from smoking mothers are not statistically significant from that of nonsmoking mothers
+
+Since the data in the two groups are normally distributed, we can choose either the pooled t-test or Sattherwaite t-test, after checking to see if the variances of the two groups are equal.
+
+Check to see if equal variance;
+
+```{r}
+var.test(smoking$Weight, nonsmoking$Weight)
+```
+
+The F test returned a pretty high p-value, so there is not evidence to reject the null that the variances are equal.
+
+Therefore, the best test to perform is the pooled t-test.
+
+Pooled T-Test for birthweight smoking vs. nonsmoking
+
+```{r}
+t.test(nonsmoking$Weight, smoking$Weight, alternative = "two.sided", var.equal = TRUE)
+```
+
+Based on the results, with a p-value well below the alpha, we can reject the null that the means of the two groups are equal and conclude that the means of smoking and nonsmoking mothers are different.
+
+## Exercise 3
+
+Now perform one-way ANOVA on Weight with MomSmoke.
+
+```{r}
+momsmoke = as.factor(birthweight$MomSmoke)
+aov.wei = aov(Weight ~ momsmoke, data = birthweight)
+summary(aov.wei)
+```
+
+### 3.a Check homogeneity of variance assumption. Does it hold and okay to perform ANOVA?
+
+Check homogeneity of variance using Levene's Test
+
+```{r}
+leveneTest(aov.wei)
+```
+
+Based on these results, we do not reject the null that the variance in the two groups is homogenous.
+
+### 3.b Make a conclusion on the effect of MomSmoke. Compare your result with the conclusion of Exercise 2.
+
+Based on the results of the one-way Anova, I conclude that there is a difference between the means of the two MomSmoke groups. The result of the one-way Anova supports the same conclusion as the t test in question 2.
+
+## Exercise 4
+
+Using Black, Married, Boy, and MomSmoke, and Ed variables as possible effects, find the best ANOVA model for Weight. Manually perform backward selection based on type3 SS result with 0.05 criteria on p-value. Perform backward selection only with main effects and then check the interaction effects only based on significant main effect terms.
+
+### 4.a Write down step by step how you perform backward selection and how you find the final model. Please do NOT include all intermediate tables and graphs in the report. Just describe each step which variable you delete and why.
+
+Initial model
+
+```{r}
+aov.wei2 = aov(Weight ~ Black + Married + Boy + MomSmoke + Ed, data = birthweight)
+Anova(aov.wei2, type = 3)
+```
+
+Eliminate Ed variable because it's p-value is greater than alpha
+
+```{r}
+aov.wei3 = aov(Weight ~ Black + Married + Boy + MomSmoke, data = birthweight)
+Anova(aov.wei3, type = 3)
+```
+
+Eliminate Married because it's p-value is greater than alpha
+
+```{r}
+aov.wei4 = aov(Weight ~ Black + Boy + MomSmoke, data = birthweight)
+Anova(aov.wei4, type = 3)
+```
+
+Eliminate Boy because it's p-value is greater than alpha
+
+```{r}
+aov.wei5 = aov(Weight ~ Black + MomSmoke, data = birthweight)
+Anova(aov.wei5, type = 3)
+```
+
+Now that the model is narrowed down to only significant main effects, we can examine the interaction effect based on those main terms
+
+```{r}
+aov.wei6 = aov(Weight ~ Black + MomSmoke + Black*MomSmoke, data = birthweight)
+Anova(aov.wei6, type = 3)
+```
+
+Since the only significant main effect terms were Black and MomSmoke, we only need to check the interaction effect between Black and MomSmoke, and it is not significant, so can be eliminated
+
+### Exercise 4.b Specify the final model and report the amount of variation explained by the model. Also, check the Normality assumption through diagnostics plots.
+
+Final Model;
+
+```{r}
+aov.weifin = aov(Weight ~ Black + momsmoke, data = birthweight)
+summary(aov.weifin)
+```
+
+Check the amount of variation explained by the model by calculating R-squared
+
+```{r}
+lm.weifin = lm(Weight ~ Black + momsmoke, data = birthweight)
+summary(lm.weifin)$r.squared
+```
+
+Check the normality assumption through diagnostics plots;
+
+```{r}
+plot(aov.weifin)
+```
+
+### 4.a State conclusions about significant differences in Weight across groups. For each significant variable, state specifically which level has a larger or smaller mean value of Weight.
+
+Check specific differences between specific groups through post-hoc tests;
+
+```{r}
+black = as.factor(birthweight$Black)
+aov.weifin = aov(Weight ~ black + momsmoke, data = birthweight)
+ScheffeTest(aov.weifin)
+```
+
+```{r}
+TukeyHSD(aov.weifin)
+```
+
+When looking at the post-hoc tests, we see that for the Black variable, the Black births had a significantly lower birthweight than White, about 293 grams. For the MomSmoke variable, the smoking group had a significantly lower birthweight than the nonsmoking, about 266 grams.

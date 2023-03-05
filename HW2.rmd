@@ -1,0 +1,362 @@
+---
+title: "Homework 2"
+author: "Austin Vanderlyn ajl745"
+date: "9/30/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Exercise 1: Analysis of Variance
+
+## 1.a
+
+Perform a one-way ANOVA for Cholesterol with BP_Status as the categorical predictor. Comment on statistical significance of BP_Status, the amount of variation described by the model, and whether or not the equal variance assumption can be trusted.
+
+Load necessary libraries
+```{r}
+library(MASS)
+library(DescTools)
+library(stats)
+```
+
+Import data
+```{r}
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms/Data")
+heartbpchol = read.csv("heartbpchol.csv")
+```
+
+Examine data. It's unbalanced but doesn't matter because it's a one-way Anova
+```{r}
+View(heartbpchol)
+table(heartbpchol$BP_Status)
+```
+
+Perform one-way Anova. The p-value of BP_Status is statistically significant so we reject the null that the group means are equal
+```{r}
+aov.bp = aov(Cholesterol ~ BP_Status, data = heartbpchol)
+summary(aov.bp)
+```
+
+Check the amount of variation described by the model by calculating R^2. Amount of variation described by the model is quite low.
+```{r}
+status = as.factor(heartbpchol$BP_Status)
+lm.bp = lm(Cholesterol ~ status, data = heartbpchol)
+summary(lm.bp)$r.squared
+```
+
+Check whether or not the equal variance assumption can be trusted using visual method
+```{r}
+boxplot(Cholesterol ~ BP_Status, data = heartbpchol)
+```
+It looks like the High and Normal categories have a few more outliers on the high end, but overall the IQR looks pretty even and the variance looks to be roughly equal across the groups.
+
+We can check the variance quantitatively using the Levenes Test.
+```{r}
+status = as.factor(heartbpchol$BP_Status)
+lm.bp = lm(Cholesterol ~ status, data = heartbpchol)
+LeveneTest(lm.bp)
+```
+The results of the Levene's Test are not statistically significant, so we are safe to assume equal variance.
+
+
+## 1.b
+
+Comment on any statistically different cholesterol means as determined by the post hoc test comparing all pairwise differences. Specifically explain what that tells us about differences in cholesterol across blood pressure status groups, like which group has the highest or lowest mean values of Cholesterol. 
+
+Use the Scheffe Test for pairwise differences
+```{r}
+ScheffeTest(aov.bp)
+```
+The difference between Optimal and Normal is not significant, but the differences between High and both of the other groups is significant. This tells us that there is a difference between the group means, and that High has the highest mean, followed by Normal, and then Optimal.
+
+
+### Exercise 2: Analysis of Variance
+
+## 2.a
+
+Perform a one way ANOVA for mcv as a function of drinkgroup. Comment on significance of the drinkgroup, the amount of variation described by the model, and whether or not the equal variance assumption can be trusted.
+
+Read in data
+```{r}
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms/Data")
+bupa = read.csv("bupa.csv")
+```
+
+Perform one way ANOVA using mcv as a function of drinkgroup
+```{r}
+drinkgroup2 = as.factor(bupa$drinkgroup)
+aov.mcv = aov(mcv ~ drinkgroup2, data = bupa)
+summary(aov.mcv)
+```
+ANOVA results show that the drinkgroup not significant
+
+Checking the amount of variation explained by the model
+```{r}
+lm.mcv = lm(mcv ~ drinkgroup2, data = bupa)
+anova(lm.mcv)
+summary(lm.mcv)$r.squared
+```
+The amount of variation explained by the model is only 8.76%
+
+Checking to see if the equal variance assumption can be trusted using Levene's Test and boxplot
+```{r}
+drinkgroup2 = as.factor(bupa$drinkgroup)
+lm.mcv = lm(mcv ~ drinkgroup2, data = bupa)
+LeveneTest(lm.mcv)
+```
+Results suggest that equal variance assumption can be trusted.
+
+
+Boxplot
+```{r}
+boxplot(mcv ~ drinkgroup, data = bupa)
+```
+Boxplot shows that while group 5 is a bit tighter and the means are different, the variance seems to be roughly the same
+
+
+## 2.b
+
+Perform a one-way ANOVA for alkphos as a function of drinkgroup. Comment on statistical significance of the drinkgroup, the amount of variation described by the model, and whether the equal variance assumption can be trusted.
+
+One way ANOVA of alkphos
+```{r}
+aov.alk = aov(alkphos ~ drinkgroup2, data = bupa)
+summary(aov.alk)
+```
+The p value of drinkgroup here is statistically significant, so we reject the null that the means are the same
+
+Amount of variation explained by the model
+```{r}
+lm.alk = lm(alkphos ~ drinkgroup2, data = bupa)
+anova(lm.alk)
+summary(lm.alk)$r.squared
+```
+The amount of variation explained by the model is very low, only 4.27%.
+
+Levene's Test
+```{r}
+LeveneTest(lm.alk)
+```
+Based on these results we can trust the equal variance assumption
+
+Boxplot
+```{r}
+boxplot(alkphos ~ drinkgroup2, data = bupa)
+```
+
+## 2.c
+
+Perform post-hoc tests for models in a) and b). Comment on any similarities or differences you
+observe from their results.
+
+Post hoc tests for model A
+```{r}
+ScheffeTest(aov.mcv)
+```
+```{r}
+TukeyHSD(aov.mcv)
+```
+
+Post hoc tests for model B
+```{r}
+ScheffeTest(aov.alk)
+TukeyHSD(aov.alk)
+```
+
+
+
+### Exercise 3: 
+
+## 3.a
+
+Read in data
+```{r}
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms/Data")
+salary = read.csv("psych.csv")
+```
+
+Two way anova
+```{r}
+aov.sal1 = aov(salary ~ sex + rank + sex*rank, data = salary)
+summary(aov.sal1)
+```
+so both the sex and rank effect are significant, but the interaction is not
+
+model 2
+```{r}
+aov.sal2 = aov(salary ~ rank + sex + sex*rank, data = salary)
+summary(aov.sal2)
+```
+Same results, rank and sex are significant but interaction effect is not
+
+
+Type 3 model sum of squares
+```{r}
+library(car)
+Anova(aov.sal1, type = 3)
+```
+```{r}
+Anova(aov.sal2, type = 3)
+```
+The type three sum of squares return similar results, both sex and rank are significant but the interaction effect is not.
+
+Check variation explained by Model 1
+```{r}
+lm.sal1 = lm(salary ~ sex + rank + sex*rank, data = salary)
+summary(lm.sal1)$r.squared
+```
+
+Check variation explained by Model 2
+```{r}
+lm.sal2 = lm(salary ~ rank + sex + sex*rank, data = salary)
+summary(lm.sal2)$r.squared
+```
+
+Variation explained by the model is the same for 1 & 2, about 66%
+
+
+## 3.b
+
+Refit the model without the interaction term. Comment on the significance of effects and variation explained. Report and interpret the Type 1 and Type 3 tests of the main effects. Are the main effects of rank and sex significant?
+
+Model 3 (without interaction effect)
+```{r}
+aov.sal3 = aov(salary ~ sex + rank, data = salary)
+summary(aov.sal3)
+```
+
+Model 4 (w/o interaction)
+```{r}
+aov.sal4 = aov(salary ~ rank + sex, data = salary)
+summary(aov.sal4)
+```
+Either way, the rank and sex effects are both significant.
+
+Type 3 sum of squares for model 3&4
+```{r}
+Anova(aov.sal3, type = 3)
+Anova(aov.sal4, type = 3)
+```
+So both the Type 1 and Type 3 sum of squares tests confirm that both sex and rank effects are significant
+
+Amount of variation explained by the model
+```{r}
+lm.sal3 = lm(salary ~ sex + rank, data = salary)
+lm.sal4 = lm(salary ~ rank + sex, data = salary)
+summary(lm.sal3)$r.squared
+summary(lm.sal4)$r.squared
+```
+
+
+## 3.c
+
+Obtain model diagnostics to validate your Normality assumptions.
+```{r}
+plot(lm.sal3)
+```
+
+```{r}
+plot(lm.sal4)
+```
+
+Based on the QQ plot it is safe to assume that the data is normal.
+
+## 3.d
+
+Choose a final model based on your results from parts (a) and (b). Comment on any significant group differences through the post-hoc test. State the differences in salary across different main effect groups and interaction (if included) between them. 
+
+Since the interaction effect has been shown to be not statistically significant, we can choose a final model with only the main effects of the sex and rank groups
+```{r}
+summary(aov.sal1)
+```
+
+We can now conduct post hoc tests to examine the differences between groups
+```{r}
+ScheffeTest(aov.sal1)
+TukeyHSD(aov.sal1)
+```
+In these tests, we notice a trend that the Associate groups are generally paid more than the Assistant, and that men are generally paid more than women. Thus, the biggest difference is between Male Associates and Female Assistants.
+
+### Exercise 4
+
+## 4.a
+
+Start with a three-way main effects ANOVA and choose the best main effects ANOVA model for mpg_highway as a function of cylinders, origin, and type for the cars in this set. Comment on which terms should be kept in a model for mpg_highway and why based on Type 3 SS. For the model with just predictors you decide to keep, comment on the significant effects in the model and comment on how much variation in highway fuel efficiency the model describes.
+
+Read in data
+```{r}
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms/Data")
+cars = read.csv("cars_new.csv")
+View(cars)
+```
+
+Create model
+```{r}
+aov.mpg = aov(mpg_highway ~ cylinders + origin + type, data = cars)
+summary(aov.mpg)
+```
+
+Check type 3 ss
+```{r}
+Anova(aov.mpg, type = 3)
+```
+Both the Type 1 and Type 3 tests confirm that the cylinders and type main effects are significant, while the origin is not. Based on this, we should backwise eliminate origin and try a model that includes just cylinders and type
+
+Model 2
+```{r}
+aov.mpg2 = aov(mpg_highway ~ cylinders + type, data = cars)
+summary(aov.mpg2)
+```
+Running the model again, the significance of the cylinders and type main effects hold up without the origin term. Before we move on to interaction effect we can check the amount of variation described by the model.
+
+Amount of variation described by the model
+```{r}
+lm.mpg2 = lm(mpg_highway ~ cylinders + type, data = cars)
+summary(lm.mpg2)$r.squared
+```
+
+
+## 4.b
+
+Significant interaction effect
+```{r}
+aov.mpg3 = aov(mpg_highway ~ origin*type + origin*cylinders + type*cylinders, data = cars)
+summary(aov.mpg3)
+```
+Of the interaction effects, only the effect between type and cylinders is significant, so we can add that to the model.
+
+Model 4
+```{r}
+aov.mpg4 = aov(mpg_highway ~ type + cylinders + type*cylinders, data = cars)
+summary(aov.mpg4)
+```
+What we see in the final model is that there is significance in the main effect of type and cylinders, and in the interaction effect of type and cylinders.
+
+Amount of variation described by the final model
+```{r}
+lm.mpg4 = lm(mpg_highway ~ type + cylinders + type*cylinders, data = cars)
+summary(lm.mpg4)$r.squared
+```
+
+## 4.c
+
+Post hoc tests for final model
+```{r}
+type = as.factor(cars$type)
+cylinder = as.factor(cars$cylinders)
+aov.mpg4 = aov(mpg_highway ~ type + cylinder + type*cylinder, data = cars)
+ScheffeTest(aov.mpg4)
+TukeyHSD(aov.mpg4)
+```
+
+There seems to be a clear difference between the means of sports cars and sedans, with sedans having the higher mileage. There is a stronger difference between 6 and 4 cylinders, which means that the biggest difference in means is between 6 cylinder sports cars and 4 cylinder sedans.
+
+```{r}
+boxplot(mpg_highway ~ type + cylinder, data = cars)
+```
+

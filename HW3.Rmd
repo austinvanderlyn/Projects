@@ -1,0 +1,259 @@
+---
+title: "Homework 3"
+author: "Austin Vanderlyn ajl745"
+date: "10/17/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/austi/OneDrive/Pictures/UTSA FALL 2021/Data Algorithms")
+heart = read.csv("heart.csv")
+```
+
+Read in data
+
+
+
+### Question 1
+
+The medical director at your company wants to know if Weight alone can predict Cholesterol outcomes. Consider modeling Cholesterol as a function of Weight.
+
+#### Question 1.a
+
+Fit a linear regression model for Cholesterol as a function of Weight. If any points are unduly influential, note those points, then remove them and refit the model. Consider Cook's distance cutoff point to be 0.015.
+
+```{r}
+lm.heart = lm(Cholesterol ~ Weight, data = heart)
+summary(lm.heart)
+```
+
+Scatter Plot
+```{r}
+with(heart, plot(Cholesterol, Weight))
+abline(lm.heart, col = "red")
+```
+
+Diagnostics Plot
+```{r}
+par(mfrow = c(2,2))
+plot(lm.heart, which = c(1:4))
+```
+
+
+Initial model: Yhat = 205.87 + 0.10X
+
+Find outliers:
+```{r}
+cook.d = cooks.distance(lm.heart)
+inf.id = which(cooks.distance(lm.heart)>0.015)
+heart[inf.id, ]
+lm.heart2 = lm(Cholesterol ~ Weight, data = heart[-inf.id, ])
+with(heart, plot(Cholesterol ~ Weight))
+abline(lm.heart, col = "red")
+abline(lm.heart2, col = "blue")
+```
+
+```{r}
+summary(lm.heart2)
+```
+
+Refit Model: Yhat = 203.57 + 0.12X
+
+
+#### Question 1.b
+
+Comment on the significance of the parameters, variation explained by the model, and any remaining issues noted in the diagnostics plots. What does this model tell us about the relationship between Cholesterol and Weight? Interpret the relationship specifically. Explain to the medical director whether this is a good model for the prediction of Cholesterol levels.
+
+Correlation
+```{r}
+cor(heart$Weight, heart$Cholesterol, method = "pearson")
+cor(heart$Weight, heart$Cholesterol, method = "spearman")
+```
+
+The relationship between Cholesterol and Weight does not appear to be a strong one. The Pearson and Spearman correlation coefficients (0.07 & 0.11) and the final model's beta1 coefficient (0.12) are not very large. 
+
+Scatter Plot
+```{r}
+with(heart, plot(Cholesterol ~ Weight))
+abline(lm.heart2, col = "blue")
+```
+
+The scatter plot seems to confirm the correlation data, there is a bit of a linear relationship but not much of one. The scatter plot also seems to show quite a bit of variance in the data, which makes sense given the low correlation coefficient.
+
+Diagnostics Plot
+```{r}
+par(mfrow = c(2,2))
+plot(lm.heart2, which = c(1:4))
+```
+
+There are a few problems with the diagnostics plots. On the fitted values, there are a few values over 2, not many, but some. The more significant problem is that on the QQ plot, the data appears to be right-skewed and not normally distributed.
+
+Significance of Parameters
+```{r}
+summary(lm.heart2)
+```
+
+The R-squared is pretty low, so the goodness of fit is not great, which fits with the low value of the correlation coefficient, but the p-value of both the individual term and the model as a whole are both significant. Overall, we can say that the model is significant, but may not be a great predictor of Cholesterol due to the high degree of variation and bad goodness-of-fit.
+
+
+### Exercise 2
+
+The medical director wants to know if blood pressures and weight can better predict cholesterol outcome. Consider modeling cholesterol as a function of diastolic, systolic, and weight. 
+
+#### Exercise 2.a
+
+Fit a linear regression model for cholesterol as a function of diastolic, systolic, and weight. Generate the diagnostics plots and comment on any issues that need to be noted. For Cook's distances, do not leave any points that have Cook's distance greater than 0.015.
+
+Linear Regression Model
+```{r}
+lm.heart3 = lm(Cholesterol ~ Weight+Diastolic+Systolic, data = heart)
+summary(lm.heart3)
+```
+
+Diagnostics Plots
+```{r}
+par(mfrow = c(2,2))
+plot(lm.heart3, which = c(1:4))
+```
+
+First off, it appears that there are some points that need to be eliminated due to high Cook's distance
+```{r}
+inf.id2 = which(cooks.distance(lm.heart3)>0.015)
+heart[inf.id2, ]
+lm.heart4 = lm(Cholesterol ~ Weight+Diastolic+Systolic, data = heart[-inf.id2, ])
+```
+
+Now, diagnostics plots without the influential points;
+```{r}
+par(mfrow = c(2,2))
+plot(lm.heart4, which = c(1:4))
+```
+
+The cook's distances look good now, but there are a few issues that need to be noted. For the fitted values, there are some, though not many, values over 2.0. The QQ plot also looks right skewed and not normally distributed.
+
+
+#### Exercise 2.b
+
+Comment on the significance of the parameters and how much variation in cholesterol is described by the model. Comment on the relationship between cholesterol and statistically significant predictors. Check multicollinearity issue among predictors. Explain to the medical director whether this is a good model for the prediction of cholesterol levels.
+
+Check Parameters
+```{r}
+summary(lm.heart4)
+```
+
+Looking at the output, the overall model appears to be significant, though not all of the coefficients are. It appears that Systolic blood pressure is a significant predictor, and to a lesser extent, so is Diastolic blood pressure. Weight, however, does not appear to be significant in this model. 
+
+Check multicollinearity
+```{r}
+pairs(heart, pch = 19)
+```
+
+Checking the pairwise scatter plot, there appears to be some correlation between Diastolic and Systolic, which could present confounding errors. We can check further by looking at the VIF.
+
+VIF
+```{r}
+car::vif(lm.heart4)
+```
+While the chart appeared to maybe show a little correlation between Diastolic and Systolic, all of the terms VIF are below 10, so there doesn't appear to be multicollinearity problems.
+
+This model is probably not good for prediction of Cholesterol levels. Weight does not appear to be a significant variable in this model, and there could be confounding between Diastolic and Systolic.
+
+
+### Exercise 3
+
+Now consider stepwise model selection for the Cholesterol model. Before performing the model selection, we remove influential points detected in Exercise 2, which has cook's distance larger than 0.015, before performing this model selection.
+
+#### Exercise 3.a
+
+Perform stepwise model model selection with .05 criteria and address any issues in diagnostics plots
+
+Stepwise Selection:
+```{r}
+model.stepwise.heart = olsrr::ols_step_both_p(lm.heart4, pent = .05, prem = .05, details = FALSE)
+model.stepwise.heart
+plot(model.stepwise.heart)
+```
+
+
+#### Exercise 3.b
+
+Interpret the final model and comment on the variation in Cholesterol explained. Compare the variations explained by the models from Exercise 1 and 2
+
+View model results
+```{r}
+model.stepwise.heart
+lm.step.heart = lm(Cholesterol ~ Systolic+Diastolic, data = heart[-inf.id2, ])
+summary(lm.step.heart)
+```
+
+Checking the model's diagnostics data, the overall model has a small p-value, so is significant, and both Systolic and Diastolic blood pressure are significant. However, the model has a very low R-square, demonstrating a bad goodness of fit. Therefore, this would not be a good model for the medical director to use to make predictions.
+
+Now, it's still a better model than the ones in questions 1 & 2, because while the R-squared value is quite low, it's still a lot higher than the r-square in question 1, and compared to the model in question 2, at least all the terms are significant.
+
+
+### Exercise 4
+
+Now consider the best subset selection for the Cholesterol model. Again, we remove influential points detected in Exercise 2, which has Cook's distance larger than 0.015, before performing the model selection. 
+
+Setup of best subset model;
+```{r}
+model.subset.heart = olsrr::ols_step_best_subset(lm.heart4)
+model.subset.heart
+```
+
+
+#### Exercise 4.a
+
+Find the best model based on adjusted R square criteria and specify which predictors are selected. 
+
+Based on adjusted R square criteria, we would select model 3, which has the largest adj. r-square of 3.67%, and includes the predictors Weight, Diastolic blood pressure, and Systolic blood pressure. However, all three adjusted r-squares are very low and very close to each other.
+
+
+#### Exercise 4.b
+
+Find the best model based on AIC criteria and specify which predictors are selected. 
+
+Based on AIC criteria, we would select model 2, which has the smallest AIC and includes the predictors Diastolic and Systolic blood pressure. Just like with part a, though, the difference between the three is minimal.
+
+
+#### Exercise 4.c
+
+Compare final models selected in a and b. Also compare final models from the best subset approach with the final model from the stepwise selection.
+
+The model selected in 4.a, indicated as model 3 in the subset model results, contains the predictors Weight, Diastolic, and Systolic, and was previously defined here as lm.heart4.
+```{r}
+subset.model3 = lm.heart4
+summary(subset.model3)
+```
+Subset Model 3 has a very low p-value so is overall significant, but on the individual terms, Weight is not significant, and Diastolic is significant, but not by much. R-square is low, ony 3.7%.
+
+
+Define Subset Model 2 with terms Diastolic and Systolic.
+```{r}
+subset.model2 = lm(Cholesterol ~ Diastolic+Systolic, data = heart[-inf.id2, ])
+summary(subset.model2)
+```
+Subset Model 2, with the terms Diastolic and Systolic, is overall significant, and both of the terms included are significant, so this model is better than Subset Model 3. 
+
+Compared to the model selected in stepwise selection, the stepwise final model is identical to Subset Model 2, and only different from Subset Model 3 by not including the Weight term. All of them have very small r-squares and are not very useful to the medical director. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
