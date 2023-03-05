@@ -1,0 +1,755 @@
+---
+title: "Final Project"
+author: "Austin Vanderlyn ajl745"
+date: "4/17/2022"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Why don't more people vote?
+
+
+## Executive Summary
+
+  In this study, I constructed a number of different models to determine what the most significant variables were that influence people's voting habits, including a generalized regression model, decision trees, and random forests. The independent variables in these models were based off of a questionnaire that people filled out about voting. 
+  
+  In addition to identifying that factors that make people vote or not vote, these models could serve to predict people's voting habits. For instance, if data was collected on residents of a particular area, the models could help predict how many of that population would vote. 
+  
+  The most significant variable for all of the models was age, which is not much of a surprise, and not something that policy makers can do much about to drive turnout. Some of the other significant variables were people who answered that they always vote in national elections, gender (women seem to vote slightly more often than men), people who are very confident in the security of elections, people who have had hardship in the last year, people who believe that civics are important, people who are registered to vote, and people who follow politics. 
+
+
+
+## Background
+
+  The United States is one the world’s oldest continuous democracies, and 
+Americans have traditionally taken great pride in their history and government, yet 
+Americans traditionally vote in far fewer numbers than other modern democratic
+nations. Voter turnout in the 2020 election was only 66.8% of the voting age population, 
+and that was the highest turnout of the 21st century, far ahead of 2016 (55.7%).
+  
+  In a study done by Pew Research before the 2020 election, the United States 
+placed 30th out of 35 OECD countries that had accessible data. Several of those countries 
+had very high turnout because of mandatory voting laws, but the United States still lags 
+far behind many that don’t have those laws, such as Sweden (82.08%), South Korea 
+(79.92%), and Israel (77.90%). 
+
+  Separate from any philosophical ideas about the importance of participatory democracy, both of the major political parties in the United States, the Republicans and the Democrats, have significant incentives about trying to increase voter turnout. Those 35-45% of the voting age population who stay home during elections are all potential votes that a party could scoop up and use to turn an election. 
+But in order to get those Americans to turn out and vote, they first need to identify what factors are keeping them from voting, so that a strategy can be developed to properly incentivize them. 
+
+  This analysis will seek to identify what those factors are, and some related questions, including but not limited to the following;
+    •	What types of people are not voting? Are there any particular ethnicities, income groups,                genders, age groups, etc. that tend to not vote more than others?
+    •	What factors do people list as reasons that they do not vote? Do any of these listed tend to             influence their decisions more than others?
+    •	Are there breakdowns within groups? For instance, does access to voting matter more to black             voters, or political agenda matter more to high income voters?
+    •	Does previous voting frequency or party affiliation matter to a person’s willingness to vote?
+    •	Does being registered to vote increase a person’s likelihood of voting?
+    •	Does the method of voting (i.e. paper, electronic, mail) impact their likelihood of voting?
+    •	Is access to voting what most likely prevents them from voting? 
+
+
+## Data Cleaning
+
+  In a poll conducted for FiveThirtyEight by the polling company Ipsos, data was collected for 8,327 respondents. The poll results were cross referenced by a voter file company, Aristotle, and assigned a classification of ‘rarely/never’, ‘sporadic’, or ‘always’, based on how often they actually voted. 
+	
+	People whose files could not be found were excluded, except for those with no files but also described themselves as voting ‘never’, so as to avoid underrepresenting nonvoters. Respondents only eligible to vote in three or fewer elections (i.e. age 24 or less) were excluded for too few data points. The final number of respondents was 5,837.
+	
+	The data consists of several personal characteristics of each respondent, like age, gender, education, race and income, as well as answers to a 30-question multiple choice survey. The answers to this survey come either as binary (T/F, vote/not vote) or as factor variables where the respondents selected from 1-4 how much they agree with a statement, or what they describe themselves as, or ‘select all that apply’ type questions. The characteristics data points are a mix of continuous, interval, and categorical. There are a lot of columns due to many, many dummy variables for some of the questions, and there is a further breakdown of the variables in the refereces.  
+	
+	There are some NAs, but they are mostly just for circumstances where a particular question didn’t apply to a respondent. Overall, the data is relatively clean.
+	
+	Several of the variables were removed, based on three criteria;
+	  - not relevant to the overall question
+	  - too specific, related to a particular election or candidate
+	  - did not apply to everyone, only to a subset, like a question that was asked only to Republicans,       for instance
+	  
+  After these variables were removed, most of the remaining variables were converted into factors, and some similiar questions were combined together to reduce the overall number of variables. When the cleaning was completed, there were the following 62 variables;
+
+  - from 1-4, how important are the following?
+    - **goodusa1**: Voting in elections
+    - **goodusa2**: Serving on a jury
+    - **goodusa3**: Following what happens in government and politics
+    - **goodusa4**: Displaying the American flag
+    - **goodusa5**: Participating in the Census
+    - **goodusa6**: Knowing the Pledge of Allegiance
+    _ **goodusa7**: Supporting the military
+    _ **goodusa8**: Respecting the opinions of those that disagree with you
+    - **goodusa9**: Believing in God
+    - **goodusa10**: protesting if you believe that government actions are wrong
+    - **culture1**: Systemic racism is a problem in the US
+    - **culture2**: Systemic racism in policing is a bigger problem than violent protest
+    - **culture3**: Society as a whole has become too soft and feminine
+    - **culture4**: the mainstream media is more interested in making money than telling the truth
+    - **culture5**: Traditional parties don't care about people like me
+    - **culture6**: The way people talk needs to change with the times to become more sensitive
+  - from 1-4, how much impact do the following have on your life?
+    - **auth1**: Elected officials in Washington, DC
+    - **auth2**: Elected officials in your state
+    - **auth3**: Elected officials in my community
+    - **auth4**: The news media
+    - **auth5**: Large financial institutions on Wall Street
+    - **auth6**: Law enforcement and the legal system
+  - Does it really matter who wins the election?
+    - **win1**: Who wins the election really matters
+    - **win2**: Things will be pretty much the same
+  - 1-4
+    - **polit**: How many of the people in office are like you?
+  - 1-2
+    - **change**: Which is more in line with your view? 1. a lot of change is needed, 2. changes are                     not really needed
+  - from 1-4, how much do you trust each of the following?
+    - **trust1**: The presidency
+    - **trust2**: Congress
+    - **trust3**: The Supreme Court
+    - **trust4**: The CDC
+    - **trust5**: Election officials
+    - **trust6**: The intelligence community
+    - **trust7**: The News Media
+    - **trust8**: The Police
+    - **trust9**: US Postal Service
+  - from 1-4, what do you think about each form of government?
+    - **gov1**: Having a democracy
+    - **gov2**: Having experts, not politicians, make decisions
+    - **gov3**: Having a strong leader who does not work with Congress
+    - **gov4**: Having the army rule
+  - yes/no, do the following apply to you?
+    - **hardship1**: Received long term disability
+    - **hardship2**: Have a chronic illness
+    - **hardship3**: Been unemployed for more than a year
+    - **hardship4**: Have been evicted from your home within the past year
+    - **rep**: from 1-5, how much does the Republican party value you?
+    - **dem**: from 1-5, how much does the Democrat party value you?
+    - **easy**: from 1-4, how easy is it to vote in national elections?
+  - from 1-4, how confident are you that each of the following are safe from fraud?
+    - **safe1**: In person voting machines
+    - **safe2**: Paper ballots cast in person
+    - **safe3**: Paper ballots submitted by mail
+    - **safe4**: Electronic votes submitted online or by email
+    - **incentive**: which of the following would get more people to vote (combined into a factor                            score)
+        - More outreach to ordinary Americans
+        - More information from unbiased sources
+        - Making Election Day a national holiday
+        - Being automatically registered to vote
+        - Automatically receiving a ballot in the mail
+        - Being able to vote in person before Election Day
+        - Being able to register and vote on the same day
+        - Being able to vote by phone or online
+        - Having more candidates to choose from
+    - **reg**: Are you currently registered to vote?
+    - **follow**: How closely are you following the election?
+  - from 1-4:  
+    - **vote**: How likely are you to vote every election?
+    - **party**: Which party do you identify with?
+    - **ppage**: Age of respondent
+    - **gender**: Gender of respondent
+    - **Educ**: Level of education
+    - **RACE**: Race of respondent
+    - **INCOME_CAT**: Househoold income category of respondent
+
+  And then the dependent variable, the one that I am actually analyzing, is **vote_actual**, which is whether or not the respondent actually voted based on voting records, regardless of what they responded in the survey. There were originally three categories; 'always', 'sporadic', and 'rarely/never'. To simplify the models, since have three levels of dependent variable raises some issues, I combined always and sporadic to make **vote_actual** a simple binary yes/no; do they vote, or not.
+    
+
+
+## Background Research
+
+  One of the major questions for this kind of case study is which types of models to construct to identify significant variables for nonvoters. A good starting step for that is just to look at the IDRE chart and pick appropriate tests based on the types of data involved. 
+  
+  For binary classification, which this was after I combined two of the voter categories, logistic regression was appropriate based on the IDRE chart, but I wanted to do some more research on data analysis on voters and voting campaigns.
+  
+  In the paper "Political Campaigns and Big Data", by David Nickerson and Todd Rogers, they broke down some of the methodology used by political campaigns, and reccommended "Supervised machine learning, such as classification and regression trees." The benefits to these, they explained are that they are good at examining the important factors for each individual and are relatively scalable to larger populations.
+  
+  So of the manner in which I designed this model came from a Pew Research paper about measuring an individual's likelihood to vote, and the manner in which you can use questionaires to create variables that impact a binary response on whether or not a person will vote;
+  
+  >"One potential benefit to this method is that it can use more of the information contained in the survey (all of the response categories in each question, rather than just a selected one or two). This also gives respondents who may have a lower likelihood of voting – whether because of their age, lack of ongoing interest in the election or simply having missed a past election – a possibility of affecting the outcome, since we know that many who score lower on the scale actually do vote. These respondents will be counted as long as they have a chance of voting that is greater than zero."
+
+IDRE Chart, UCLA Department of Statistical Methods and Data Analytics, https://stats.oarc.ucla.edu/other/mult-pkg/whatstat/
+
+"Political Campaigns and Big Data", Nickerson, David W. & Rogers, Todd, Harvard Kennedy School of Government, https://scholar.harvard.edu/files/todd_rogers/files/political_campaigns_and_big_data_0.pdf
+
+"Can Likely Voter Models be Improved?" Keeter, Scott & Igielnik, Ruth, Pew Reserch Center https://www.pewresearch.org/methods/2016/01/07/measuring-the-likelihood-to-vote/
+
+
+### Methodology
+
+  Once data cleaning was complete, I began with running a basic generalized linear model as a baseline. There were way too many variables selected by the model, leading me to suspect some confounding vetween then. I checked the variance inflation factor (vif) for all of the terms on that glm model and removed the ones that were too highly correlated. 
+  
+  After the basic glm, I constructed two other glm models, one using stepwise forward selection criteria and one using best AIC criteria. The AIC model performed the best of the three glm models, so I calculated the best sweet spot for the trade off between sensitivity and specificity, but the model did not improve with those parameters, so the normal AIC model is probably the best of the 3. The model with optimal cutoff actually lost some specificity, and that is important when trying to examine nonvoters.
+  
+  For the last two models, I examined two different forms of ensemble techniques; decision trees and random forests. Both produced models that were fairly accurate when compared to the test split, had slightly different results when it came to which variables affected the liklihood of voting, which I will discuss in results. After constructing the initial tree, I pruned the best size tree using misclassification rate, but it did not really improve the performance, so the basic tree would suffice. 
+  After constructing the basic random forest, I set up a loop to test for the optimal hyperparameters with respect to results with the lowest OOB. This bagged model didn't really show any improvement over the original, so I tried with a boosted model, which again didn't really show much improvement over the basic random forest.
+  
+  
+### Results
+  
+##### Accuracy of Different Models
+
+  All of the models built had very similar rates of accuracy, somewhere around 86%, as you can see summarized in the table below. Now, accuracy of classification is not really the goal of this study, but it does provide some relative degree of how good the model is at fitting the data that can be applied to all of the different methods. 
+  
+
+  The best of the models' accuracies was that for the random forest, but like I said, the important thing here is that they do have some predictive power over the data, not that we can actually correctly classify people (we already have their real results, anyway). So, the important thing when selecting which model to choose is not its classification accuracy, but which variables it finds important, and how usfully they could be developed into strategy. 
+  
+  The AIC model found the following variables to be significant;
+  
+- ppage
+- vote1
+- gendermale
+- probvote
+- safe4(response 1)
+- vote4
+- win1
+- win2
+- safe4(response 4)
+- safe4(response 2)
+- hardship1(response 2)
+- safe4(response 3)
+- goodusa2(response 2)
+
+
+Important variables for the decision tree;
+
+
+
+Important Variables for the random forest:
+
+
+
+##### Importance of Variables
+
+  Because the scope of this study is not to come up with one particular equation or model, but to see why people are not voting and what can be done about it, I think the best approach is actually to combine the results of all three methods for a more well-rounded picture. 
+  
+  The advantage of the GLM models is that the coefficients clearly identify whether there is a positive or negative relationship between the variables and the question, the advantage of decision trees is that it can show visually where those forks in the road are that group people together, and random forests have a high degree of accuracy and are good at showing each variable's relative importance. 
+  
+##### Some Takeaways for Potential Policy Makers
+
+1. The two most important variables from the analysis are most often vote, whether people describe themselves as a frequent voter or not, and age, with older people more likely to vote. A campaign could make a target of their message to get people to see the importance of viewing themselves as a frequent voter and taking pride in that, and make a push to get younger people to vote, since older people already do. 
+
+2. The boosted random forest saw party as well as the specific variables for rep and dem parties all as significant variables. A campaign could make it aa theme of their advertising to get people to identify as a member of a particular party, instead of being independent. 
+
+3. All of the different models showed importance to the safe variable, so campaigns could make election security and integrity a theme of their marketing, both in terms of showing and educating people that it is safe, as well as encouraging voters to make a plan for voting securely. 
+
+
+
+## Conculsion and Reccomendations
+
+  In conclusion, I believe that political campaigns should rely not just on one particular type of model, but to keep and maintain a number of different models to keep track of which variables prevent people from voting. 
+  
+  These multiple different approaches will allow policy makers to get a more nuanced variety of insights and spot potentially hidden effects, since it is not necessary for this objective to only select one type of model. 
+  
+  In the future, once these models are developed, they could also be improved by designing new questionnaires based upon the insights gleaned from the initial models, so that there is less noise interference. Also, separate models and questionnaires could be developed for different parts of the country or different voter blocks that might have differing perspectives from the American public as a whole. 
+
+## Code Section
+
+Libraries
+```{r, echo =TRUE, results='hide'}
+library(tidyverse)
+library(PerformanceAnalytics)
+library(car)
+library(caret)
+library(MASS)
+library(ROCR)
+library(tree)
+library(party)
+library(randomForest)
+library(randomForestSRC)
+library(gbm)
+library(Metrics)
+library(pscl)
+```
+
+Read in data
+```{r}
+nv = read.csv("C:/Users/austi/OneDrive/Desktop/UTSA/UTSA Spring 2022/Applications/Final Project/nonvoters_data.csv")
+```
+
+
+Exploration
+```{r echo=TRUE, results='hide'}
+str(nv)
+```
+
+
+### Data Cleaning
+
+I have gone through the attached questionaire file, and decided on which variables to include and which to exclude, which will be summarized below. There are way too many variables at 119, so I will need to do a good bit of cleaning to cut out extraneous ones and combine some into factors based on commonalities.
+
+- question 1 is about US citizenship, and the survey ends if they answer not a citizen, so every single entry in the dataset is the same. Eliminated.
+- renaming question 2 as goodusa parts 1 through 10
+- renaming question 3 as culture parts 1 through 6
+- renaming question 4 as auth parts 1 through 6
+- renaming question 5 as win
+- renaming question 6 as polit
+- renaming question 7 as change
+- renaming question 8 as trust parts 1 through 9
+- renaming question 9 as gov parts 1 through 4
+- question 11 parts 1 through 6 are related to covid-19 so not related to why people don't vote in general, removed
+- question 18's parts are all very similar and related to difficulty voting, so I'm going to add them together and then    convert to a factor, so the different parts added together will become a 'score' of how difficult it is to vote
+- same thing with question 19, going to combine them all into one column that's a score of incentives to vote
+- 21, 22, 23 & 24 are all specific to 2020, going to remove
+- 27, 28, 29, 31, 32 and 33 don't apply to everyone, remove
+
+
+
+Cleaning
+```{r echo=TRUE, results='hide'}
+nvc = nv %>%
+  subset(select = c(-Q1,-Q11_1,-Q11_2, -Q11_3, -Q11_4, -Q11_5, -Q11_6, -Q21, -Q22, -Q23, -Q24, -Q27_1, -Q27_2, -Q27_3, -Q27_4, -Q27_5, -Q27_6, -Q28_1, -Q28_2, -Q28_3, -Q28_4, -Q28_5, -Q28_6, -Q28_7, -Q28_8, -Q29_1, -Q29_2, -Q29_3, -Q29_4, -Q29_5, -Q29_6, -Q29_7, -Q29_8, -Q29_9, -Q29_10, -Q31, -Q32, -Q33, -weight, -Q19_1, -Q19_2, -Q19_3, -Q19_4, -Q19_5, -Q19_6, -Q19_7, -Q19_8, -Q19_9, -Q19_10, -Q18_1, -Q18_2, -Q18_3, -Q18_4, -Q18_5, -Q18_6, -Q18_7, -Q18_8, -Q18_9, -Q18_10)) %>%
+  rename(goodusa1 = Q2_1, goodusa2 = Q2_2, goodusa3 = Q2_3, goodusa4 = Q2_4, goodusa5 = Q2_5, goodusa6 = Q2_6,
+         goodusa7 = Q2_7, goodusa8 = Q2_8, goodusa9 = Q2_9, goodusa10 = Q2_10, culture1 = Q3_1, culture2 = Q3_2,
+         culture3 = Q3_3, culture4 = Q3_4, culture5 = Q3_5, culture6 = Q3_6, auth1 = Q4_1, auth2 = Q4_2, auth3 = Q4_3,
+         auth4 = Q4_4, auth5 = Q4_5, auth6 = Q4_6, win = Q5, polit = Q6, change = Q7, trust1 = Q8_1, trust2 = Q8_2,
+         trust3 = Q8_3, trust4 = Q8_4, trust5 = Q8_5, trust6 = Q8_6, trust7 = Q8_7, trust8 = Q8_8, trust9 = Q8_9, 
+         gov1 = Q9_1, gov2 = Q9_2, gov3 = Q9_3, gov4 = Q9_4, hardship1 = Q10_1, hardship2 = Q10_2, hardship3 = Q10_3,            hardship4 = Q10_4, rep = Q14, dem = Q15, easy = Q16, safe1 = Q17_1,
+         safe2 = Q17_2, safe3 = Q17_3, safe4 = Q17_4, reg = Q20, follow = Q25, vote = Q26, party = Q30) %>%
+  mutate(probvote = nv$Q18_1 + nv$Q18_2 + nv$Q18_3 + nv$Q18_4 + nv$Q18_5 + nv$Q18_6 + nv$Q18_7 + nv$Q18_8 + nv$Q18_9 +  nv$Q18_10) %>%
+  mutate(incentive = nv$Q19_1 + nv$Q19_2 + nv$Q19_3 + nv$Q19_4 + nv$Q19_5 + nv$Q19_6 + nv$Q19_7 + nv$Q19_8 + nv$Q19_9 + nv$Q19_10) 
+str(nvc)
+```
+The dependent variable is going to be voter_category, whether they actually voted or not. Now that variable has 3 levels, so I'd probably have to do multinomial regression, but I haven't really learned how to do that yet, so I am going to convert that variable into a new binomial variable by combining sometimes vote and always vote into a simple 0/1 outcome, whether they vote or not.
+```{r}
+nvc$vote_actual = ifelse(nvc$voter_category == "rarely/never", 0, 1)
+```
+
+And now remove voter_category;
+```{r}
+nvc = nvc[-60]
+```
+
+
+Ok, I've got this down to a much more manageable 62 variables, but a lot of them need to be converted to factors
+```{r echo=TRUE, results='hide'}
+nvc$goodusa1 = as.factor(nvc$goodusa1)
+nvc$goodusa2 = as.factor(nvc$goodusa2)
+nvc$goodusa3 = as.factor(nvc$goodusa3)
+nvc$goodusa4 = as.factor(nvc$goodusa4)
+nvc$goodusa5 = as.factor(nvc$goodusa5)
+nvc$goodusa6 = as.factor(nvc$goodusa6)
+nvc$goodusa7 = as.factor(nvc$goodusa7)
+nvc$goodusa8 = as.factor(nvc$goodusa8)
+nvc$goodusa9 = as.factor(nvc$goodusa9)
+nvc$goodusa10 = as.factor(nvc$goodusa10)
+nvc$culture1 = as.factor(nvc$culture1)
+nvc$culture2 = as.factor(nvc$culture2)
+nvc$culture3 = as.factor(nvc$culture3)
+nvc$culture4 = as.factor(nvc$culture4)
+nvc$culture5 = as.factor(nvc$culture5)
+nvc$culture6 = as.factor(nvc$culture6)
+nvc$auth1 = as.factor(nvc$auth1)
+nvc$auth2 = as.factor(nvc$auth2)
+nvc$auth3 = as.factor(nvc$auth3)
+nvc$auth4 = as.factor(nvc$auth4)
+nvc$auth5 = as.factor(nvc$auth5)
+nvc$auth6 = as.factor(nvc$auth6)
+nvc$win = as.factor(nvc$win)
+nvc$polit = as.factor(nvc$polit)
+nvc$change = as.factor(nvc$change)
+nvc$trust1 = as.factor(nvc$trust1)
+nvc$trust2 = as.factor(nvc$trust2)
+nvc$trust3 = as.factor(nvc$trust3)
+nvc$trust4 = as.factor(nvc$trust4)
+nvc$trust5 = as.factor(nvc$trust5)
+nvc$trust6 = as.factor(nvc$trust6)
+nvc$trust7 = as.factor(nvc$trust7)
+nvc$trust8 = as.factor(nvc$trust8)
+nvc$trust9 = as.factor(nvc$trust9)
+nvc$gov1 = as.factor(nvc$gov1)
+nvc$gov2 = as.factor(nvc$gov2)
+nvc$gov3 = as.factor(nvc$gov3)
+nvc$gov4 = as.factor(nvc$gov4)
+nvc$hardship1 = as.factor(nvc$hardship1)
+nvc$hardship2 = as.factor(nvc$hardship2)
+nvc$hardship3 = as.factor(nvc$hardship3)
+nvc$hardship4 = as.factor(nvc$hardship4)
+nvc$rep = as.factor(nvc$rep)
+nvc$dem = as.factor(nvc$dem)
+nvc$easy = as.factor(nvc$easy)
+nvc$safe1 = as.factor(nvc$safe1)
+nvc$safe2 = as.factor(nvc$safe2)
+nvc$safe3 = as.factor(nvc$safe3)
+nvc$safe4 = as.factor(nvc$safe4)
+nvc$reg = as.factor(nvc$reg)
+nvc$follow = as.factor(nvc$follow)
+nvc$vote = as.factor(nvc$vote)
+nvc$party = as.factor(nvc$party)
+nvc$educ = as.factor(nvc$educ)
+nvc$race = as.factor(nvc$race)
+nvc$gender = as.factor(nvc$gender)
+nvc$income_cat = as.factor(nvc$income_cat)
+nvc$vote_actual = as.factor(nvc$vote_actual)
+str(nvc)
+```
+
+
+### Linear Model
+
+I'm going to start with a linear regression model, before proceeding to decision trees and random forests.
+
+Split into train/test split
+```{r}
+set.seed(123)
+train = sample(1:nrow(nvc), size = 0.7 * nrow(nvc))
+nvc.train = nvc[train,]
+nvc.test = nvc[-train,]
+```
+
+
+# Build initial glm model
+```{r}
+nvc.glm = glm(vote_actual ~ ., data = nvc.train, family = "binomial")
+summary(nvc.glm)
+
+```
+
+
+# Check for correlation between variables
+```{r}
+vif(nvc.glm)
+```
+
+
+Running the model again, taking out the highly correlated variables;
+```{r}
+nvc.glm = glm(formula = vote_actual ~ .-safe1-safe3-auth2-culture2-trust6-party-trust8-trust1-safe2-culture3-auth1-culture4-auth6, data = nvc.train, family = "binomial")
+summary(nvc.glm)
+
+```
+
+
+# Construct best AIC model
+```{r}
+m1.null = glm(vote_actual ~ 1, family = "binomial", data = nvc.train)
+m1.full = glm(vote_actual ~ ., family = "binomial", data = nvc.train)
+glm.AIC <- step(m1.null, scope = list(upper = m1.full),
+direction = "both", test = "Chisq", trace = F)
+summary(glm.AIC)
+
+```
+
+```{r}
+probs.AIC = predict(glm.AIC, nvc.test)
+preds.AIC = as.factor(ifelse(probs.AIC >0.5, 1, 0))
+confusionMatrix(preds.AIC, nvc.test$vote_actual)
+AIC.acc = (291+1230)/(291+1230+75+155)
+```
+
+
+
+
+# Construct stepwise forward model
+```{r}
+step.nvc = glm(vote_actual ~ .-safe1-safe3-auth2-culture2-trust6-party-trust8-trust1-safe2-culture3-auth1-culture4-auth6, data = nvc.train, family = "binomial") %>%
+  stepAIC(trace = FALSE, steps = 1000, k=2)
+summary(step.nvc)
+```
+
+
+Now predictions on that model;
+```{r}
+probs.step = predict(step.nvc, nvc.test)
+preds.step = as.factor(ifelse(probs.step >0.5, 1, 0))
+step.acc = (297+1220)/(149+85+297+1220)
+step.acc
+confusionMatrix(preds.step, nvc.test$vote_actual)
+```
+
+
+So now I have a logistic model and significant terms, which are, from most to least significant;
+
+- ppage
+- vote1
+- gendermale
+- probvote
+- safe4(response 1)
+- vote4
+- win1
+- win2
+- safe4(response 4)
+- safe4(response 2)
+- hardship1(response 2)
+- safe4(response 3)
+- goodusa2(response 2)
+
+
+Several of these are just different levels of the same factor variable, so I'd like to try refitting the model with only the base variables, to see if that might perform better.
+
+```{r}
+nvc.glm2 = glm(vote_actual ~ ppage+vote+gender+probvote+safe4+win+hardship1+goodusa2, family = "binomial", data = nvc.train)
+summary(nvc.glm2)
+```
+
+
+Now I can make predictions on this model using the testing set;
+```{r}
+probs.glm2 = predict(nvc.glm2, newdata = nvc.test)
+preds.glm2 = as.factor(ifelse(probs.glm2 >0.5, 1, 0))
+glm2.acc = (291+1229)/(291+1229+76+155)
+confusionMatrix(preds.glm2, nvc.test$vote_actual)
+```
+
+Not a huge difference but there is a slight improvement in the accuracy from the stepwise forward selection. 
+
+Overall the AIC had the best accuracy, so I'll proceed with that one, and I can take a look at the plots to look for influential points.
+```{r}
+par(mfrow = c(2,2))
+plot(glm.AIC, which = 1:4)
+```
+With 4085 data points in the model, 4/4085 = cook's distance cutoff point of 0.000979, so it doesn't look like there's any influential points.
+
+
+Next, I can fine tune that AIC model to look for the best trade off between sensitivity and specificity.
+
+# Graph of ROC curve;
+```{r}
+prediction.AIC <- prediction(predict(glm.AIC, nvc.train, type = "response"),nvc.train$vote_actual)
+auc.AIC <- round(as.numeric(performance(prediction.AIC, measure = "auc")@y.values),3)
+
+false.rates.AIC <-performance(prediction.AIC, "fpr","fnr")
+accuracy.AIC <-performance(prediction.AIC, "acc","err")
+perf.AIC <- performance(prediction.AIC, "tpr","fpr")
+
+plot(perf.AIC,colorize = T, main = "ROC Curve")
+text(0.5,0.5, paste("AUC:", auc.AIC))
+```
+
+
+Now to calculate the threshold cutoff for the best combination of sensitivity and specificity
+```{r}
+#sensitivity
+plot(unlist(performance(prediction.AIC, "sens")@x.values), unlist(performance(prediction.AIC, "sens")@y.values), type="l", lwd=2, ylab="Sensitivity", xlab="Cutoff", main = paste("Maximized Cutoff\n","AUC: ",auc.AIC))
+par(new=TRUE)
+
+#specificity
+plot(unlist(performance(prediction.AIC, "spec")@x.values), unlist(performance(prediction.AIC, "spec")@y.values), type="l", lwd=2, col='red', ylab="", xlab="")
+axis(4, at=seq(0,1,0.2))
+mtext("Specificity",side=4, col='red')
+
+#plot to find the intersection
+min.diff.AIC <-which.min(abs(unlist(performance(prediction.AIC, "sens")@y.values) - unlist(performance(prediction.AIC, "spec")@y.values)))
+
+min.x.AIC<-unlist(performance(prediction.AIC, "sens")@x.values)[min.diff.AIC]
+min.y.AIC<-unlist(performance(prediction.AIC, "spec")@y.values)[min.diff.AIC]
+optimal.AIC <-min.x.AIC 
+
+abline(h = min.y.AIC, lty = 3)
+abline(v = min.x.AIC, lty = 3)
+text(min.x.AIC,0,paste("optimal threshold=",round(optimal.AIC,2)), pos = 4)
+```
+
+# Refit the model with the optimal cutoff
+```{r}
+nvc.train$PredProb.AIC <- predict.glm(glm.AIC, newdata = nvc.train, type = "response")
+nvc.train$PredChoice.AIC.O <- ifelse(nvc.train$PredProb.AIC >= optimal.AIC, 1, 0)
+confusionMatrix(as.factor(nvc.train$vote_actual), as.factor(nvc.train$PredChoice.AIC.O))
+```
+
+
+Well, it's still a pretty good model, but interestingly optimizing the sensitivity and specificity didn't improve the model. There is a 6 point drop in accuracy, which would be fine if there was an improvement in specificity. Specificity is the most important here because the purpose of this analysis is to identify people who don't vote and why, so we need the model to be better at identifyinng the negative result. But there was a drop in specifity so I will just stick with the basic AIC model.
+
+
+### Decision Tree
+
+Grow basic tree
+```{r}
+nvc.train = nvc.train[-64]
+nvc.train = nvc.train[-63]
+tree.nvc = tree(vote_actual ~ ., data = nvc.train)
+summary(tree.nvc)
+```
+
+I'm going to do a second rpart tree just to use this fancy plot;
+```{r}
+tree.rpart = train(vote_actual ~ ., data = nvc.train, method = 'rpart')
+rattle::fancyRpartPlot(tree.rpart$finalModel, sub = "Decision Tree for Nonvoters")
+```
+
+Make predictions using the basic tree;
+```{r}
+preds.tree = predict(tree.nvc, newdata = nvc.test, type = "class")
+table(preds.tree, nvc.test$vote_actual)
+```
+```{r}
+tree.accuracy = (289+1242)/(157+63+289+1242)
+tree.accuracy
+```
+
+
+# Prune using missclassification rate;
+```{r}
+set.seed(123)
+cv.nvc = cv.tree(tree.nvc, FUN = prune.misclass)
+cv.nvc
+```
+
+
+Plots for the estimated test error rate;
+```{r}
+par(mfrow = c(1,2))
+plot(cv.nvc$size, cv.nvc$dev, type = "b")
+plot(cv.nvc$k, cv.nvc$dev, type = "b")
+
+```
+
+
+# Get the best sized tree;
+```{r}
+best_size = cv.nvc$size[which.min(cv.nvc$dev)]
+
+# prune the tree with the best size
+prune.nvc = prune.misclass(tree.nvc, best = best_size)
+
+# plot pruned tree
+plot(prune.nvc)
+text(prune.nvc, cex = 0.7)
+```
+
+
+Predictions using pruned tree;
+```{r}
+preds.pruned = predict(prune.nvc, nvc.test, type = "class")
+table(preds.pruned, nvc.test$vote_actual)
+```
+```{r}
+pruned.accuracy = (289+1242)/(289+1242+157+63)
+pruned.accuracy
+```
+
+
+```{r}
+summary(prune.nvc)
+summary(tree.nvc)
+```
+
+
+The pruned tree didn't really reduce the error rate, so we could just use the base tree.
+
+
+### Random Forest
+
+Now I will try to build a random forest model for the nonvoters data, then try bagging, boosting, and fine tuning the hyperparameters to try to get the best model.
+```{r}
+rf.nvc = randomForest(vote_actual ~ ., data = nvc.train, importance = TRUE)
+rf.nvc
+```
+
+```{r}
+varImpPlot(rf.nvc)
+```
+
+
+
+Predictions for the basic random forest model;
+```{r}
+rf.preds = predict(rf.nvc, newdata = nvc.test)
+confusionMatrix(rf.preds, nvc.test$vote_actual)
+```
+```{r}
+rf.accuracy = (263+1269)/(263+1269+36+183)
+rf.accuracy
+```
+
+
+# Now going to contruct a bagged model;
+```{r}
+bag.nvc = rfsrc(vote_actual ~ ., data = nvc.train, mtry = 8, ntree = 1000, importance = TRUE)
+bag.nvc
+```
+
+
+Make predictions on test set
+```{r}
+preds.bag = predict.rfsrc(bag.nvc, newdata = nvc.test, importance = TRUE)
+preds.bag
+```
+```{r}
+bag.accuracy = (263+1268)/(263+37+183+1268)
+bag.accuracy
+bag.oob = 0.1256
+```
+
+```{r}
+plot(bag.nvc)
+```
+```{r}
+bag.nvc$importance
+```
+
+
+# Fine tune the bagged hyperparameters;
+```{r}
+set.seed(123)
+grid = expand.grid(mtry = seq(1, 15, 3), nodesize = c(5, 10, 15), ntree = c(600, 1200, 1800))
+oob.err = c()
+grid
+```
+
+
+```{r}
+set.seed(123)
+
+for (i in 1:nrow(grid)){
+  # model
+  model = rfsrc(vote_actual ~ ., data = nvc.train,
+                mtry = grid$mtry[i], nodesize = grid$nodesize[i] , ntree =                                            grid$ntree[i])
+  
+  # store oob error
+  oob.err[i] = model$err.rate[length(model$err.rate)]
+}
+```
+
+
+# Hyperparameters that produced the lowest observed error;
+```{r}
+best_params = which.min(oob.err)
+print(grid[best_params,])
+```
+
+
+Refit random forest with best hyperparameters;
+```{r}
+rf.tuned = rfsrc(vote_actual ~ ., data = nvc.train, mtry = 1, nodesize = 15, ntree = 1200, importance = TRUE)
+rf.tuned
+```
+
+
+Wow, the misclassification rate with the tuned parameters actually increased the oob error. 
+
+
+```{r}
+tuned.preds = predict.rfsrc(rf.tuned, newdata = nvc.test, importance = TRUE)
+tuned.preds
+```
+The error rate didn't get any better on the predictions, so I will use the bagged random forest without the tuned hyperparameters
+
+
+# Lastly, I'm going to try a boosted random forest;
+```{r}
+boost.nvc = gbm(vote_actual ~ ., data = nvc.train, distribution = "gaussian", n.trees = 2000, interaction.depth = 6)
+summary(boost.nvc)
+```
+
+
+```{r}
+boost.probs = predict(boost.nvc, newdata = nvc.test, importance = TRUE)
+preds.boost = as.factor(ifelse(probs.AIC >0.5, 1, 0))
+table(preds.boost, nvc.test$vote_actual)
+boost.acc = (291+1230)/(291+1230+75+155)
+boost.acc
+```
+
+
+```{r echo=FALSE, results='markup'}
+glm2.acc = 0.8680753
+Acc.table = data.frame(x = c("GLM", "Forward Stepwise", "Stepwise AIC", "Decision Tree", "Pruned Decision Tree", "Random Forest", "Bagged Random Forest", "Boosted Random Forest"), 
+                       y = c(glm2.acc, step.acc, AIC.acc, tree.accuracy, pruned.accuracy, rf.accuracy, bag.accuracy, boost.acc))
+colnames(Acc.table) = c("Model", "Accuracy")
+Acc.table
+
+```
+
+
+
+
+
+
+

@@ -1,0 +1,512 @@
+---
+title: "Customer Retention Case Study"
+author: "Austin Vanderlyn ajl745"
+date: "3/31/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Executive Summary
+
+In order for a business to be successful, it can't only worry about the product that it creates and how that product is sold. Those things are important, but equally as important is the relationship that the firm has with its customers. This relationship consists of two primary factors; 1. how to grow the business by finding new customers, and 2. how to ensure that the customers it already has stay with the firm. 
+
+# The Problem
+
+The problem is this two fold objective that businesses face; how do we attract new customers, and how do we keep the customers that we have? Now the firm may just take whatever steps that they think will help with that and hope for the best, but that is not going to be an efficient or effective way to go about it. 
+
+Rather, firms can conduct analysis of the data they collect on customers, and try to identify factors that newly acquired or long-standing customers share in common. Armed with a set of significant variables, they can develop a business plan to best meet the needs of these customers. 
+
+# Review of Related Literature
+
+In researching which methods will be best suited to address the problem, there are some related studies that have been done to best address the situation of customer retention. Many seem to be advocating machine learning models, which is beyond the scope of this case study, but there are several different perspectives on regression. 
+
+An paper by Bart Larivière and DirkVan den Poel called "Predicting customer retention and profitability by using random forests and regression forests techniques" looked at 3 key indicators of successful customer relationship, the important one for our purposes here being 'partial-defection', another way of defining customer retention. In it, they discuss how after trying out several different forms of regression, they achieved better results with random forests than either linear or logistic regression. 
+There is another good article on Medium by Akhil Sharma called "Applying Random Forest on Customer Churn Data" where he tests out several forms of regression on data from a telephone company, trying to develop a model to predict customer churn. That analysis compares random forest regression to multiple linear regression and achieves much better, almost perfect results from random forests. This article actually turned out to be very helpful in interpreting some of my results that I was surprised by.
+
+There is definite support from the literature related to similar problems to reccomend random forest regression as the best primary model for predicting customer acquisition and retention, and that is what this analysis will primarily focus on. 
+
+Sharma, Akhil, "Applying Random Forest on Customer Churn Data"
+https://medium.com/data-science-on-customer-churn-data/applying-random-forest-on-customer-churn-data-53883efb25bf
+
+Lariviere, Bart & van den Poel, Dirk, "Predicting customer retention and profitability by using random forests and regression forests techniques"
+https://www.sciencedirect.com/science/article/abs/pii/S0957417405000965
+
+# Methodologies
+
+There are two primary models to construct here; a model to predict customer acquisition, and a model to predict customer duration (retention). Furthermore, the model to predict customer acquisition has to be built first so that it can be used to build the duration forest. 
+
+To begin with, once the data was cleaned and I had the four target variables, I constructed a random forest model for the target variable acquisition. That model was used to make predictions on the testing set. 
+
+I then filtered the training set to include only the values for which acquisition was positive (because you can't predict duration for a customer you never acquired) and binded them together with the predictions from the testing set to create a new dataframe.
+
+I then constructed a random forest model for the variable duration and examined the results. After fine tuning the hyperparameters, I was left with a final, tuned model. 
+
+Lastly, I ran logistic regression and decision tree models to compare the results. 
+
+# Data / Cleaning
+
+The data here is part of the R SMCRM package and consists of 500 observations of 15 variables. One of the variables is just a completely irrelevant customer number, which was removed. Three more are simply the squared results of other variables, which are redundant. 
+
+Upon checking the multicolinearity when using acquisition as the target variable, most of the variables have much too strong of a correlation and will not be useful. 
+
+Ultimately, after removing irrelevant or too strongly correlated variables, we are left with four variables of interest; aq_exp, industry, revenue, and employees. 
+
+Acquisition (the target variable) and industry have to be converted to factor variables prior to beginning analysis.
+
+# Findings
+
+The accuracy rates for the three types of models on customer acquisition are summarized as follows;
+
+     Model                 Accuracy
+[1,] "Random Forest"       "78.00%"
+[2,] "Logistic Regression" "79.33%"
+[3,] "Decision Tree"       "73.33%"
+
+Suprisingly, the logistic regression model was actually slightly more accurate than the random forest model. However, when the random forest model was used to create the duration random forest, the predictions were surprisingly accurate.
+
+The summary of the actual durations versus the predictions are as follows;
+
+Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  760.9   962.5  1071.2  1101.0  1235.6  1551.5 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    654     951    1071    1099    1236    1673 
+    
+These results, once the random forest model was tuned with the right hyperparameters, had an accuracy rate of 0.9983393, which I initially thought was a mistake until I read, as referenced in the article above, that tuned random forest models can be extremely, almost perfectly, accurate. 
+
+The most important variables for customer acquisition appeared to be employees, followed by acq_exp (total dollars spent trying to acquire prospect), and the most important variables for the duration appeared to be ret_exp (dollars spent trying to retain prospect) and freq (the number of purchases the customer made while with the firm)
+
+# Conclusion & Reccomendations
+
+Without a better explanation of the variables involved and the type of business involved, it's hard to make reccomendations on how to translate this into action, but clearly the ratio of employees to customers and the money spent on acquiring them is important to customer acquisition, and the money spent on retention is very important in that respect. 
+
+Frequency of purchases is hard to translate into a retention strategy, but isn't that big of a deal, the amount of expenditure on retention was far and away the most important. 
+
+Further analysis would be useful, now that the firm knows which variables are significant, they could collect data on where that money is spent (advertising, promotions, corporate gifts, events, etc.) and then perform random forest regression on that data to develop a spending strategy. 
+
+
+# Code Section
+
+Libraries
+```{r}
+library(SMCRM)
+library(PerformanceAnalytics)
+library(randomForestSRC)
+library(randomForest)
+library(tree)
+library(ISLR)
+library(gbm)
+library(caret)
+library(ggplot2)
+library(tidyverse)
+library(ggthemes)
+library(car)
+```
+
+
+Read in data
+```{r}
+library(SMCRM)
+data("acquisitionRetention")
+ret = acquisitionRetention
+```
+### Data Cleaning
+
+Explore
+```{r}
+str(ret)
+```
+
+
+
+Customer variable is useless, so it can be removed
+```{r}
+ret = ret[-1]
+```
+
+
+Check correlation between variables
+```{r}
+chart.Correlation(ret, histogram = TRUE, pch = 19)
+```
+
+
+There's a lot of very strongly correlated variables here. Other than acq_exp, every variable from duration to sow
+has correlation problems. We can check their impact on the first target variable, acquisition, through boxplots
+
+Acquisition correlation boxplots
+```{r}
+par(mfrow = c(3,3))
+boxplot(ret$duration, ret$acquisition)
+boxplot(ret$profit, ret$acquisition)
+boxplot(ret$ret_exp, ret$acquisition)
+boxplot(ret$acq_exp_sq, ret$acquisition)
+boxplot(ret$ret_exp_sq, ret$acquisition)
+boxplot(ret$freq, ret$acquisition)
+boxplot(ret$freq_sq, ret$acquisition)
+boxplot(ret$crossbuy, ret$acquisition)
+boxplot(ret$sow, ret$acquisition)
+```
+Yeah, most of these appear to default to 0 for the '2' value of acquisition, so too strongly correlated. 
+
+That makes the standard model; acquisition ~ acq_exp + industry + revenue + employees
+
+
+First, I'll need to convert acquisition and industry to factor variables
+```{r}
+ret$acquisition = as.factor(ret$acquisition)
+ret$industry = as.factor(ret$industry)
+```
+
+
+Split dataset into training and testing sets
+```{r}
+set.seed(123)
+train = sample(1:nrow(ret), size = 0.7 * nrow(ret))
+ret.train = ret[train,]
+ret.test = ret[-train,]
+```
+
+
+### Random Forest on Acquisition
+
+Create random forest model on variable acquisition;
+```{r}
+acq.rf = randomForest(acquisition ~ acq_exp + industry + revenue + employees, data = ret.train, importance = TRUE, ntree = 1000)
+acq.rf
+```
+
+
+Take a look at the initial forest
+```{r}
+importance(acq.rf)
+varImpPlot(acq.rf)
+```
+
+
+The most important variables for acquisition of new customers appear to be employees and acq_exp. 
+
+
+Now we can make some predictions on the acquisition random forest using the testing data.
+```{r}
+acq.preds = predict(acq.rf, newdata = ret.test)
+```
+
+
+Confusion matrix
+```{r}
+confusionMatrix(acq.preds, ret.test$acquisition)
+```
+This model has an accuracy rate of 78%, not too bad. 
+
+
+so now that I have a random forest model to predict acquisition, I need to combine that with the original dataset to 
+then develop a model for customer retention duration. The first step in that is to apply this model to the full set of data
+
+
+```{r}
+acq.all.preds = predict(acq.rf, ret)
+```
+
+
+Now to add the predictions to the original dataset;
+```{r}
+ret2 = cbind(ret, acq.all.preds)
+```
+
+
+There's no way to retain a customer that you didn't acquire, so now I will create a new dataset that has only positive values for acquisition
+```{r}
+ret.acq = subset(ret2, ret2$acquisition == '1' & ret2$acq.all.preds == '1')
+```
+
+
+All right, now I start the whole process all over again using ret.acq
+
+
+Check for correlation (have to leave out acquisition and acq.all.preds since they're factors)
+```{r}
+chart.Correlation(ret.acq[ ,c(2:5,8,10,11,13,14)], histogram = TRUE)
+```
+
+There's a couple here that might be a problem.
+
+Check VIF on a generic GLM
+```{r}
+dur.glm = glm(duration ~ profit + acq_exp + ret_exp + freq + 
+                          crossbuy + sow + industry + revenue + employees, data = ret.acq)
+
+vif(dur.glm)
+
+dur.glm = glm(duration ~ acq_exp + ret_exp + freq + 
+                          crossbuy + sow + industry + revenue + employees, data = ret.acq)
+
+vif(dur.glm)
+```
+
+
+As long as I remove profit, I should be ok on correlation.
+
+
+### Random Forest for Duration
+
+Build random forest model for the duration variable;
+```{r}
+dur.rf = rfsrc(duration ~ acq_exp + ret_exp + freq + crossbuy + sow + industry + revenue + employees, data = ret.acq, importance = TRUE, ntree = 1000)
+dur.rf
+```
+
+
+Take a look at variable importance
+```{r}
+print(dur.rf$importance)
+plot.rfsrc(dur.rf)
+```
+
+
+Looks like most of the variables play a very small role, with Freq a little more than most, but ret_exp is far and away the most important.
+
+Outside of the model that gives us a prediction algorithm, it would probably be useful for the client to have some summary statistics on duration.
+
+Make predictions using the duration random forest
+```{r}
+dur.preds = predict(dur.rf, ret.acq)$predicted
+```
+
+
+Adding the predictions back into the dataframe
+```{r}
+full.ret.predictions = cbind(ret.acq, dur.preds)
+```
+
+
+Checking too see the predictions betweeen the actual data and the predicted values
+```{r}
+summary(full.ret.predictions$dur.preds)
+summary(full.ret.predictions$duration)
+```
+
+Nice! the min and the max are a bit off but that's normal due to outliers, the 1st quarter is pretty close and the Median, Mean, and 3rd quartile are right on the money. 
+
+
+I'm going to check on the min depth of the variables just so I have a reason to use that tile heat map that the TA had in class;
+
+```{r}
+min.depth = max.subtree(dur.rf, sub.order = TRUE)
+print(round(min.depth$order, 3)[,1])
+```
+
+
+Using the code template from that rmd file to generate a plot of the min depth;
+```{r}
+data.frame(md = round(min.depth$order, 3)[,1]) %>%
+  tibble::rownames_to_column(var = "variable") %>%
+  ggplot(aes(x = reorder(variable,desc(md)), y = md)) +
+    geom_bar(stat = "identity", fill = "orange", color = "black", width = 0.2)+
+    coord_flip() +
+     labs(x = "Variables", y = "Minimal Depth")+
+     theme_economist()
+```
+
+You can see that industry by far has the greatest minimal depth, but I'm going to generate the tiled heat map too because it looks purty. 
+
+```{r}
+as.matrix(min.depth$sub.order) %>%
+  reshape2::melt() %>%
+  data.frame() %>%
+  ggplot(aes(x = Var1, y = Var2, fill = value)) +
+    scale_x_discrete(position = "top") +
+    geom_tile(color = "white") +
+    viridis::scale_fill_viridis("Relative min. depth") +
+    labs(x = "Model Variables", y = "Model Variables") +
+    theme_bw()
+```
+
+It shows the same thing - greatest minimal depth for industry.
+
+### PDP plots
+
+PDP plots for each variable
+```{r}
+plot.variable(dur.rf)
+```
+
+
+### Tuning Hyperparameters
+
+Now, for the second part of task 2, fine tuning the random forest hyperparameters. Going to follow the process laid out in the last class video of writing a for loop for different mtry and ntree values, although I think I'm going to try different node sizes too.
+
+Going by this summary of dur.rf to determine the different sequences;
+
+ Sample size: 331
+                     Number of trees: 1000
+           Forest terminal node size: 5
+       Average no. of terminal nodes: 41.497
+No. of variables tried at each split: 3
+              Total no. of variables: 8
+       Resampling used to grow trees: swor
+    Resample size used to grow trees: 209
+                            Analysis: RF-R
+                              Family: regr
+                      Splitting rule: mse *random*
+       Number of random split points: 10
+                     (OOB) R squared: 0.92891506
+   (OOB) Requested performance error: 3367.50555629
+```{r}
+set.seed(123)
+
+mtry.values = seq(1,6,1)
+nodesize.values = seq(1,12,2)
+ntree.values = seq(500,3000,500)
+```
+
+
+Create hyper grid and empty vector
+```{r}
+set.seed(123)
+
+hyper_grid = expand.grid(mtry = mtry.values, nodesize = nodesize.values, ntree = ntree.values)
+
+oob.err = c()
+```
+
+
+For loop
+```{r}
+set.seed(123)
+
+for (i in 1:nrow(hyper_grid)){
+  # model
+  model.lp = rfsrc(duration ~ acq_exp + ret_exp + freq + crossbuy + sow + industry + revenue + employees, data =ret.acq,
+                mtry = hyper_grid$mtry[i], nodesize = hyper_grid$nodesize[i] , ntree = hyper_grid$ntree[i])
+  
+  # store oob error
+  oob.err[i] = model.lp$err.rate[length(model.lp$err.rate)]
+}
+```
+
+
+Find out which combo of hyperparameters produced the lowest error
+```{r}
+best.i = which.min(oob.err)
+print(hyper_grid[best.i,])
+```
+
+
+### Tuned Random Forest for Duration
+
+Now refit the model with the optimum hyperparameters
+```{r}
+set.seed(123)
+
+dur.rf.hyp = rfsrc(duration ~ acq_exp + ret_exp + freq + crossbuy + sow + industry + revenue + employees, data =ret.acq,
+                mtry = 6, nodesize = 1, ntree = 500)
+dur.rf.hyp
+```
+
+
+Now, make predictions and add them to the dataframe to see if performance has increased;
+```{r}
+set.seed(123)
+
+dur.preds2 = predict(dur.rf.hyp, ret.acq)$predicted
+ret.hyp = cbind(full.ret.predictions, dur.preds2)
+summary(ret.hyp$duration)
+summary(ret.hyp$dur.preds2)
+```
+
+Yeah, this one is a little bit better. The 1st quarter, min, and max are all a bit closer to the actual. The median, mean, and 3rd quarter haven't changed that much because the initial model was so close to begin with.
+
+
+Check MSE of this model vs. untuned 
+```{r}
+mean((ret.hyp$duration - ret.hyp$dur.preds2)^2)
+```
+```{r}
+mean((full.ret.predictions$duration - full.ret.predictions$dur.preds)^2)
+```
+The MSE of the tuned model is way, way lower than the untuned, so I so definitely go with the tuned.
+
+
+So, the final tuned random forest model is;
+
+dur.rf.hyp = rfsrc(duration ~ acq_exp + ret_exp + freq + crossbuy + sow + industry + revenue + employees, data =ret.acq,
+                mtry = 6, nodesize = 1, ntree = 500)
+                
+Accuracy of predictions;
+```{r}
+accuracy = sum(ret.acq$duration) / sum(dur.preds2)
+accuracy
+```
+
+                
+
+
+### Now, for task 3, time to check the performance of the random forest model against decision tree and logistic regression models
+
+I will start with the logistic regression model, since I already have created a base model for it with the other variable.
+
+
+```{r}
+set.seed(123)
+train.control = trainControl(method = "cv")
+acq.glm = train(acquisition~ acq_exp + industry + revenue + employees,
+                  data=ret.train, method= 'glm', family= 'binomial',trControl = train.control)
+summary(acq.glm)
+```
+
+Since it's so close to a significant model, just going to do a quick manual backward selection;
+```{r}
+acq.glm = train(acquisition~ industry + revenue + employees,
+                  data=ret.train, method= 'glm', family= 'binomial',trControl = train.control)
+summary(acq.glm)
+```
+
+
+
+Logit model predictions
+```{r}
+glm.preds = predict(acq.glm, ret.test)
+table(glm.preds, ret.test$acquisition)
+confusionMatrix(ret.test$acquisition, glm.preds)
+```
+
+
+
+
+### Decision Tree
+
+Build Tree
+```{r}
+dt.acq = train(acquisition ~ acq_exp + industry + revenue + employees, data = ret.train, method ='rpart', trControl = train.control)
+dt.acq
+rattle::fancyRpartPlot(dt.acq$finalModel, sub = "Decision Tree for predicting acquisition")
+```
+
+
+Make predictions for decision tree
+```{r}
+dt.preds = predict(dt.acq, newdata = ret.test)
+confusionMatrix(ret.test$acquisition, dt.preds)
+```
+
+
+Table of accuracy rates for different methods
+```{r}
+models = c("Random Forest", "Logistic Regression", "Decision Tree")
+accuracy = c("78.00%", "79.33%", "73.33%")
+table = cbind(Model = models, Accuracy = accuracy)
+table
+```
+
+
+
+
+
+
+'

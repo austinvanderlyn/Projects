@@ -1,0 +1,419 @@
+---
+title: "Dow Jones Case Study"
+author: "Austin Vanderlyn ajl745"
+date: "3/27/2022"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(caret)
+library(stats)
+library(tree)
+library(e1071)
+library(quantmod)
+```
+
+## Executive Summary
+
+Investing in the stock market is a risky business. Stock investment is essentially a gamble, a bet on a stock to either perform well or lose value. There is a certain amount of logic, common sense, and strategy involved, but at the end of the day, no matter how sound the investor's reasoning is, it is still a roll of the dice. 
+
+Like any good gambler, the investor's goal, then, is not to bet to win on every play, but to minimize risk over the long run. Statistical analysis can essentially perform a risk assessment of stocks, allowing the investor insight when developing a portfolio. 
+
+By building regression models to analyze stocks' performance and rate of change, an investor can predict which stocks are likely to perform well, while miminmizing the amount of risk taken. 
+
+
+
+## The Problem
+
+In order to best invest in the stock market, it is necessary to develop models that can best predict which stocks will perform well, and which will not, as well as the commensurate level of risk involved in each investment. 
+
+To attempt this, I performed an analysis of a set of 30 stocks from the Dow Jones Industrial Average from a period in 2011. After cleaning and preparing the data, I built a series of 3 different models to best predict which stocks were good bets to invest in. 
+
+After building the models and checking to see which ones had the lowest error rates, I examined the predicted returns and risk coefficients based on the Capital Asset Pricing Model. 
+
+
+
+## Review of Related Literature
+
+There is an interesting paper by Jingyi Shen & M. Omair Shafiq called "Short-term stock market price trend prediction using a comprehensive deep learning system", where they analyze prices from the Chinese stock market and try to build a model that can predict prices. It's a more complex problem than in this case study, but there is interesting discussion of the different possible models to use and they do propose using an SVM model, which is ultimately what worked best with this Dow Jones data. 
+
+In order to properly understand the DJIA and how it works, the articles "Dow Divisor" by Adam Hayes and "What Are These Points That the Dow Is Always Gaining or Losing?" by Investopedia were incredibly useful. They explain how the 'points' of the DJIA are calculated, what they mean, and what role the divisor plays in transforming the prices into percent returns. 
+
+"Short-term stock market price trend prediction using a comprehensive deep learning system", Jingyi Shen & M. Omair Shafiq
+https://journalofbigdata.springeropen.com/articles/10.1186/s40537-020-00333-6#citeas
+
+"Dow Divisor", Adam Hayes
+https://www.investopedia.com/terms/d/dowdivisor.asp
+
+"What Are These Points That the Dow Is Always Gaining or Losing?", The Investopedia Team
+https://www.investopedia.com/ask/answers/what-are-points-on-the-dow/#citation-24
+
+## Methodologies
+
+After cleaning the data, I checked the lag on a few different variables to see where the lag correlation was the closest. Lag 1 appeared to have the strongest correlation, so I mutated the independent variables to apply the lag 1 correlation. 
+
+Once the variables had lag applied, I tried some linear models with different variables, and found that there was way too much overfitting with all of the variables. I had trouble setting up a stepwise model inside the for loop, so just selected the three variables that seemed to be the most significant; close, volume, and percent change volume over last week. 
+
+I then set up a for loop to run a linear regression on those three variables using the training dataset, then doing predictions using the testing data, then finally calculating the Root Mean Squared Error and Adjusted R-squared.
+
+Once the linear model had run for all thirty stocks, I calculated the average root mean squared error and adjusted r^2 for the stocks to evaluate the total error of the model. 
+
+Next was the decision tree model, which followed the same process; a for loop was constructed that ran a tree model for each of the 30 stocks using the training dataset, calculated the average predictions for the overall model, and calculated the RMSE and adjusted R^2 for the entire model. 
+
+Last was the Support Vector Model, which followed the same process; for loop built using the training dataset, predictions using the test dataset, and average RMSE and adjusted R^2.
+
+After each of the three models was complete, I calculated the risk for each of the 30 stocks using the Capital Asset Pricing Model. In the equation for the CAPM, $E(R_{i}) = R_{f}+\beta_{i}(E(R_{m})-R_{f})$, the beta coefficient is the amount of risk for each stock. The scale for interpreting the beta coefficients is that any beta below 1 is considered riskier than the Dow Jones as a whole, and a beta greater than 1 is expected to perform better than the Dow Jones average. 
+
+The betas are calculated by taking the returns for each stock over the 23 weeks, summing their returns, dividing by the Dow Jones divisor to normalize the returns based on the stock prices (the divisor is constantly updated and in 2011 was 0.132129493), then applying the delt function to modify the returns into a weekly percentage change. 
+
+
+## Data Cleaning
+
+Each of the different stocks had an NA value for the previous week's values in the first week of observation, which had to be removed. 
+
+The date for the different weeks of observation was stored as a string, so that had to be convverted to a date format using the lubridate function. 
+
+Open, high, low, close, next week's open and next week's close all had to be converted to a numeric vector. The stock column was converted to a factor so that it could be used in creating a for loop for the different regression models. There are 30 different stocks, so it was turned into a categorical variable with 30 levels. 
+
+The data has 690 records total, for 30 stocks, so there are records for each stock for 23 different weeks. These weeks are divided up into two quarters, so I used quarter 1 for training in each of the models and quarter 2 as testing data in the models. 
+
+
+
+## Findings
+
+The three main models had differing levels of error and adjusted R^2. The linear regression model had a RMSE of 4.02385
+and an R^2 of 0.1290199, which explains 12.9% of the stock pricing. 
+
+The decision tree model had an RMSE of 2.969585 and an R^2 of 0.1257055, which explains 12.6% of the stock pricing. 
+
+The support vector machine model had an RMSE of 2.916711 and an R^2 of 0.1490117, which explains 14.9% of the variation in stock pricing. 
+
+When looking at the returns and the beta coefficients for each stock, Boeing (BA) and Caterpiller (CAT) had the highest levels of risk, based on their beta coefficients, and Proctor and Gamble (PG) and Bank of America (BAC) had the lowest levels of risk. 
+
+As far as the projected returns for these stocks, Alcoa Corperation (AA) and AT&T (T) had the lowest projected returns, both more than a 3% loss, and Bank of America (BAC) and Chevron (CVX) had the highest projected rates of return. 
+
+
+## Conclusion and Reccomendations
+
+In conclusion, I would recommend for investors to use a Support Vector Machine model to predict stock prices, which, although investing is always risky, can minimize the amount of randomality in the process. 
+
+By using the beta coefficients derived from the Capital Asset Pricing Model, investors can also avoid potentially risky stocks if they stick to investing in stocks with high betas. 
+
+The model could be improved over time with more data, and would become more accurate, but because of the nature of the problem and the fact that it is trying to predict stock prices in an ever-fluctuating marketplace, it will be critical to maintain the most recent and up-to-date data. 
+
+
+## Code Section
+
+Read in Data and examine
+```{r}
+dow = read.csv("C:/Users/austi/OneDrive/Desktop/UTSA/UTSA Spring 2022/Applications/Data/dow_jones_index.csv.data")
+head(dow)
+```
+
+
+Change character types to numeric, except for stocks
+```{r}
+dow$date = lubridate::mdy(dow$date)
+dow$open = as.numeric(gsub("\\$", "", dow$open))
+dow$high = as.numeric(gsub("\\$", "", dow$high))
+dow$low = as.numeric(gsub("\\$", "", dow$low))
+dow$close = as.numeric(gsub("\\$", "", dow$close))
+dow$next_weeks_open = as.numeric(gsub("\\$", "", dow$next_weeks_open))
+dow$next_weeks_close = as.numeric(gsub("\\$", "", dow$next_weeks_close))
+```
+
+
+Change stock to a categorical variable
+```{r}
+dow$stock = as.factor(dow$stock)
+dow
+str(dow)
+```
+
+
+Check lag correlation
+```{r}
+lag.plot(dow$percent_change_next_weeks_price, set.lag = 1:4)
+lag.plot(dow$open, set.lag = 1:4)
+lag.plot(dow$high, set.lag = 1:4)
+lag.plot(dow$low, set.lag = 1:4)
+lag.plot(dow$close, set.lag = 1:4)
+```
+There doesn't appear to be a lot of difference, so we can just use lag 1
+
+
+Mutate variables with lag correlation
+```{r}
+dow = dow %>%
+  group_by(stock) %>%
+  mutate(open = lag(open, n = 1)) %>%
+  mutate(high = lag(high, n = 1)) %>%
+  mutate(low = lag(low, n = 1)) %>%
+  mutate(close = lag(close, n = 1)) %>%
+  mutate(volume = lag(volume, n = 1)) %>%
+  mutate(percent_change_price = lag(percent_change_price, n = 1)) %>%
+  mutate(percent_change_volume_over_last_wk = lag(percent_change_volume_over_last_wk, n = 1)) %>%
+  mutate(previous_weeks_volume = lag(previous_weeks_volume, n = 1)) %>%
+  mutate(next_weeks_open = lag(next_weeks_open, n = 1)) %>%
+  mutate(next_weeks_close = lag(next_weeks_close, n = 1)) %>%
+  mutate(percent_return_next_dividend = lag(percent_return_next_dividend, n = 1))
+```
+
+
+Split into training and testing set
+```{r}
+dowtrain = dow %>%
+  filter(quarter == 1)
+dowtest = dow %>%
+  filter(quarter == 2)
+```
+
+
+```{r}
+dow %>%
+  filter(stock == 'AA')
+```
+
+
+```{r}
+names = unique(dow$stock)
+mse <- rep(NA, length(names))
+r2 <- rep(NA, length(names))
+lm.stocks <- data.frame(Stock = names, RMSE = mse, RSquared = r2)
+lm.stock.predictions <- data.frame(Stock = names, RMSE = mse, RSquared = r2)
+```
+
+
+```{r}
+for(i in 1:length(names)){
+  
+  stock.train <- subset(dowtrain, stock == names[i])
+  stock.test <- subset(dowtest, stock == names[i])
+  
+  lm.fit <- lm(percent_change_next_weeks_price ~ close + volume + percent_change_volume_over_last_wk, 
+               data = stock.train) 
+  
+  lm.preds <- lm.fit %>% 
+    predict(stock.test) 
+  
+  lm.rmse <- RMSE(stock.test$percent_change_next_weeks_price, lm.preds)
+  lm.stock.predictions[i, c("RMSE")] <- lm.rmse
+  
+  lm.r2 <- R2(stock.test$percent_change_next_weeks_price, lm.preds)
+  lm.stock.predictions[i, c("RSquared")] <- lm.r2
+}
+```
+
+
+```{r}
+lm.rmse.avg <- mean(lm.stock.predictions$RMSE, na.rm = TRUE)
+lm.r2.avg <- mean(lm.stock.predictions$RSquared, na.rm = TRUE)
+lm.rmse.avg
+lm.r2.avg
+
+```
+
+
+```{r}
+lm.stock.predictions
+```
+
+
+Build decision tree model
+```{r}
+
+mse = rep(NA, length(names))
+r2 = rep(NA, length(names))
+tree.stock.predictions = data.frame(Stock = names, RMSE = mse, RSquared = r2)
+
+for(i in 1:length(names)){
+  
+  stock.train = subset(dowtrain, stock == names[i])
+  stock.test = subset(dowtest, stock == names[i])
+  
+  tree.fit = tree(percent_change_next_weeks_price ~  close + volume + percent_change_volume_over_last_wk, data = stock.train)
+  
+  tree.preds = tree.fit %>%
+    predict(stock.test)
+  
+  tree.rmse = RMSE(stock.test$percent_change_next_weeks_price, tree.preds)
+  tree.stock.predictions[i, c("RMSE")] <- tree.rmse
+  
+  tree.r2 <- R2(stock.test$percent_change_next_weeks_price, tree.preds)
+  tree.stock.predictions[i, c("RSquared")] <- tree.r2
+
+}
+```
+```{r}
+tree.stock.predictions
+```
+
+
+
+```{r}
+tree.rmse.avg <- mean(tree.stock.predictions$RMSE, na.rm = TRUE)
+tree.r2.avg <- mean(tree.stock.predictions$RSquared, na.rm = TRUE)
+tree.rmse.avg
+tree.r2.avg
+```
+
+
+Build SVM Model
+```{r}
+stocks <- as.factor(unique(dowtrain$stock))
+mse <- rep(NA, length(names))
+r2 <- rep(NA, length(names))
+svm.stock.predictions <- data.frame(Stock = names, RMSE = mse, RSquared = r2)
+
+final.pred <- rep(NA, length(names))
+stock.predictions <- data.frame(Stock = names, Prediction = final.pred)
+
+svm.stock.predictions
+stock.predictions
+```
+
+```{r}
+dowtrain = na.omit(dowtrain)
+dowtest = na.omit(dowtest)
+
+for(i in 1:length(names)){
+ 
+  stock.train = subset(dowtrain, stock == names[i])
+  stock.test = subset(dowtest, stock == names[i])
+  
+  set.seed(1)
+  svm.fit = train(percent_change_next_weeks_price ~
+                   close + volume + percent_change_volume_over_last_wk, 
+                   data = stock.train,  method = "svmPoly",
+                   metric = "RMSE", preProcess = c("center","scale"), 
+                   trControl = trainControl(method = "cv"))
+  
+  svm.preds = svm.fit %>% 
+    predict(stock.test)
+  
+  stock.predictions[i, c("Prediction")] <- svm.preds[4]
+  
+  svm.rmse = RMSE(stock.test$percent_change_next_weeks_price, svm.preds)
+  svm.stock.predictions[i, c("RMSE")] <- svm.rmse
+  
+  svm.r2 = R2(stock.test$percent_change_next_weeks_price, svm.preds)
+  svm.stock.predictions[i, c("RSquared")] <- svm.r2
+}
+```
+
+
+
+
+```{r}
+svm.rmse.avg <- mean(svm.stock.predictions$RMSE)
+svm.r2.avg <- mean(svm.stock.predictions$RSquared)
+svm.rmse.avg
+svm.r2.avg
+```
+
+
+
+
+
+
+CAPM
+```{r}
+dow.divisor = 0.132129493
+
+dow.returns = aggregate(dow$close, by = list(dow$date), FUN = function(x) sum(x) / dow.divisor)
+dow.returns
+```
+```{r}
+return.DOW <- na.omit(Delt(dow.returns[,2]))
+return.DOW
+```
+
+
+
+
+```{r}
+dow.group <- aggregate(dow$close, by = list(dow$date), FUN = function(x) sum(x)/dow.divisor)
+return.DOW <- na.omit(Delt(dow.group[,2]))
+
+stocks <- as.factor(unique(dow$stock))
+stock.returns <- data.frame(matrix(0.0, ncol = 30, nrow = 23))
+colnames(stock.returns) <- stocks
+
+# Calculate stock returns
+for(i in 1:length(stocks)){
+  dow.sub <- subset(dow, stock == stocks[i])
+  stock.returns[i] <- na.omit(Delt(dow.sub$close))
+}
+
+stock.returns <- cbind(stock.returns, return.DOW) %>% 
+  rename(DOW = Delt.1.arithmetic)
+
+head(stock.returns)
+```
+
+
+```{r}
+stock.predictions
+
+```
+
+
+
+```{r}
+beta.AA <- lm(AA ~ DOW, data = stock.returns)$coef[2]
+beta.AXP <- lm(AXP ~ DOW, data = stock.returns)$coef[2]
+beta.BA <- lm(BA ~ DOW, data = stock.returns)$coef[2]
+beta.BAC <- lm(BAC ~ DOW, data = stock.returns)$coef[2]
+beta.CAT <- lm(CAT ~ DOW, data = stock.returns)$coef[2]
+beta.CSCO <- lm(CSCO ~ DOW, data = stock.returns)$coef[2]
+beta.CVX <- lm(CVX ~ DOW, data = stock.returns)$coef[2]
+beta.DD <- lm(DD ~ DOW, data = stock.returns)$coef[2]
+beta.DIS <- lm(DIS ~ DOW, data = stock.returns)$coef[2]
+beta.GE <- lm(GE ~ DOW, data = stock.returns)$coef[2]
+beta.HD <- lm(HD ~ DOW, data = stock.returns)$coef[2]
+beta.HPQ <- lm(HPQ ~ DOW, data = stock.returns)$coef[2]
+beta.IBM <- lm(IBM ~ DOW, data = stock.returns)$coef[2]
+beta.INTC <- lm(INTC ~ DOW, data = stock.returns)$coef[2]
+beta.JNJ <- lm(JNJ ~ DOW, data = stock.returns)$coef[2]
+beta.JPM <- lm(JPM ~ DOW, data = stock.returns)$coef[2]
+beta.KRFT <- lm(KRFT ~ DOW, data = stock.returns)$coef[2]
+beta.KO <- lm(KO ~ DOW, data = stock.returns)$coef[2]
+beta.MCD <- lm(MCD ~ DOW, data = stock.returns)$coef[2]
+beta.MMM <- lm(MMM ~ DOW, data = stock.returns)$coef[2]
+beta.MRK <- lm(MRK ~ DOW, data = stock.returns)$coef[2]
+beta.MSFT <- lm(MSFT ~ DOW, data = stock.returns)$coef[2]
+beta.PFE <- lm(PFE ~ DOW, data = stock.returns)$coef[2]
+beta.PG <- lm(PG ~ DOW, data = stock.returns)$coef[2]
+beta.T <- lm(`T` ~ DOW, data = stock.returns)$coef[2]
+beta.TRV <- lm(TRV ~ DOW, data = stock.returns)$coef[2]
+beta.UTX <- lm(UTX ~ DOW, data = stock.returns)$coef[2]
+beta.VZ <- lm(VZ ~ DOW, data = stock.returns)$coef[2]
+beta.WMT <- lm(WMT ~ DOW, data = stock.returns)$coef[2]
+beta.XOM <- lm(XOM ~ DOW, data = stock.returns)$coef[2]
+```
+
+
+```{r}
+stock.returns.table = cbind(colnames(stock.returns), c(beta.AA, beta.AXP, beta.BA, beta.BAC, beta.CAT, beta.CSCO,
+                          beta.CVX, beta.DD, beta.DIS, beta.GE, beta.HD, beta.HPQ, beta.IBM,
+                          beta.INTC, beta.JNJ, beta.JPM, beta.KRFT, beta.KO, beta.MCD,
+                          beta.MMM, beta.MRK, beta.MSFT, beta.PFE, beta.PG, beta.T, beta.TRV,
+                          beta.UTX, beta.VZ, beta.WMT, beta.XOM))
+stock.returns.table
+```
+
+
+
+
+
+
+
+
+
+
+

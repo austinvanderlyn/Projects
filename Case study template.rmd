@@ -1,0 +1,68 @@
+---
+title: "Bank Marketing Case Study"
+author: "Austin Vanderlyn ajl745"
+date: "2/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Executive Summary
+
+Blah Blah Blah
+
+
+### 2. The Problem
+
+We have been given a dataset by the State College of Pennsylvania which collected 453 samples from people traveling from a location in the suburbs into the city. There are three different routes into the city, and the problem we need to solve is to predict the likelihood that a commuter will pick a specific route, a 4 lane arterial route. In addition, we would like to further identify which variables seem to most affect the commuter's choice of route. 
+
+To accomplish this, 
+
+
+### Appendix
+
+Load Libraries
+```{r}
+install.packages("ROCR")
+install.packages("lmtest")
+library(logistf)
+library(tidyverse)
+library(car)
+library(broom)
+library(DescTools)
+library(ROCR)
+library(lmtest)
+```
+
+Load data
+```{r}
+BankData = read.csv("C:/Users/austi/OneDrive/Desktop/UTSA/UTSA Spring 2022/Applications/Data/bank-additional.csv")
+str(BankData)
+```
+
+Character variables need to be converted to factor
+```{r}
+BankData$job = as.factor(BankData$job)
+BankData$marital = as.factor(BankData$marital)
+BankData$education = as.factor(BankData$education)
+BankData$default = as.factor(BankData$default)
+BankData$housing = as.factor(BankData$housing)
+BankData$loan = as.factor(BankData$loan)
+BankData$contact = as.factor(BankData$contact)
+BankData$month = as.factor(BankData$month)
+BankData$day_of_week = as.factor(BankData$day_of_week)
+BankData$poutcome = as.factor(BankData$poutcome)
+BankData$y = as.factor(BankData$y)
+str(BankData)
+```
+
+
+Fit initial model;
+```{r}
+m1 = glm(y ~ ., data = BankData)
+```
+
+
+
