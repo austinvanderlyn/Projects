@@ -1,0 +1,279 @@
+dm 'odsresults; clear';
+
+libname mylib "p:\";
+filename bigfile "p:\fa15_data.txt" lrecl = 65576;
+data mytemp;
+infile bigfile;
+input
+their col #s
+myid 1-7
+regyes 3276
+regno 3277
+trust_ag_lot 5684
+trust_ag_lit 5729
+trust_any_ag 5774
+trust_neith 5925
+trust_dis_lit 5864
+trust_dis_lot 5909
+trust_any_dis 5954
+inform_ag_lot 4670
+inform_ag_lit 4747
+inform_any_ag 4824
+inform_neith 4901
+inform_dis_lit 4978
+inform_dis_lot 5055
+inform_any_dis 5132
+econ_sig_worse 4161
+econ_some_worse 4162
+econ_abt_same 4163
+econ_some_bet 4164
+econ_sig_bet 4165
+pol_very_con 3287
+pol_some_con 3288
+pol_mid 3289
+pol_some_lib 3290
+pol_very_lib 3291
+pol_any_con 3292
+pol_any_lib 3293
+protest_ag_lot 4615
+protest_ag_lit 4692
+protest_neith 4846
+protest_dis_lit 4923
+protest_dis_lot 5000
+duty_ag_lot 4617
+duty_ag_lit 4694
+duty_neith 4848
+duty_dis_lit 4925
+duty_dis_lot 5002
+cause_ag_lot 4672
+cause_ag_lit 4749
+cause_neith 4903
+cause_dis_lit 4980
+cause_dis_lot 5057
+novel_ag_lot 4674
+novel_ag_lit 4751
+novel_neith 4905
+novel_dis_lit 4982
+novel_dis_lot 5059
+internet_ag_lot 5522
+internet_ag_lit 5560
+internet_neith 5636
+internet_dis_lit 5674
+internet_dis_lot 5712
+web_ag_lot 5524
+web_ag_lit 5562
+web_neith 5638
+web_dis_lit 5676
+web_dis_lot 5714
+radio_ag_lot 5760
+radio_ag_lit 5805
+radio_neith 5895
+radio_dis_lit 5940
+radio_dis_lot 5985
+tv_ag_lot 5762
+tv_ag_lit 5807
+tv_neith 5897
+tv_dis_lit 5942
+tv_dis_lot 5987
+first_ag_lot 5503
+first_ag_lit 5541
+first_neither 5617
+first_dis_lit 5655
+first_dis_lot 5693
+print_ag_lot 5502
+print_ag_lit 5540
+print_neither 5616
+print_dis_lit 5654
+print_dis_lot 5692
+college_graduate 2433
+member_govern 2921
+female 2384
+hispanicyes 2371
+married 2446
+news_online_recent 8565
+nbc_recent 9078
+cnn_recent 9614;
+run;
+proc format;
+value myscale
+	1 = "disagree a lot"
+	2 = "disagree a little"
+	3 = "neither agree nor disagree"
+	4 = "agree a little"
+	5 = "agree a lot";
+value  yesno
+	0 = "no"
+	1 = "yes";
+run;
+data myvars;
+set mytemp;
+if regyes = 1 then reg = 1;
+if regno = 1 then reg = 0;
+if trust_ag_lot = 1 then trust = 5;
+if trust_ag_lit = 1 then trust = 4;
+if trust_neith = 1 then trust = 3;
+if trust_dis_lit = 1 then trust = 2;
+if trust_dis_lot = 1 then trust = 1;
+if inform_ag_lot = 1 then inform = 5; 
+if inform_ag_lit = 1 then inform = 4;
+if inform_neith = 1 then inform = 3;
+if inform_dis_lit = 1 then inform = 2;
+if inform_dis_lot = 1 then inform = 1;
+if econ_sig_worse = 1 then econ = 1;
+if econ_some_worse = 1 then econ = 2;
+if econ_abt_same = 1 then econ = 3;
+if econ_some_bet = 1 then econ = 4;
+if econ_sig_bet = 1 then econ = 5;
+if pol_very_con = 1 then pol = 1;
+if pol_some_con = 1 then pol = 2;
+if pol_mid = 1 then pol = 3;
+if pol_some_lib = 1 then pol = 4;
+if pol_very_lib = 1 then pol = 5;
+if protest_ag_lot = 1 then protest = 5;
+if protest_ag_lit = 1 then protest = 4;
+if protest_neith = 1 then protest = 3;
+if protest_dis_lit = 1 then protest = 2;
+if protest_dis_lot = 1 then protest = 1;
+if duty_ag_lot = 1 then duty = 5;
+if duty_ag_lit = 1 then duty = 4;
+if duty_neith = 1 then duty = 3;
+if duty_dis_lit = 1 then duty = 2;
+if duty_dis_lot = 1 then duty = 1;
+if cause_ag_lot = 1 then cause = 5;
+if cause_ag_lit = 1 then cause = 4;
+if cause_neith = 1 then cause = 3;
+if cause_dis_lit = 1 then cause = 2;
+if cause_dis_lot = 1 then cause = 1;
+if novel_ag_lot = 1 then novel = 5;
+if novel_ag_lit = 1 then novel = 4;
+if novel_neith = 1 then novel = 3;
+if novel_dis_lit = 1 then novel = 2;
+if novel_dis_lot = 1 then novel = 1;
+if internet_ag_lot = 1 then internet = 5;
+if internet_ag_lit = 1 then internet = 4;
+if internet_neith = 1 then internet = 3;
+if internet_dis_lit = 1 then internet = 2;
+if internet_dis_lot = 1 then internet = 1;
+if web_ag_lot = 1 then web = 5;
+if web_ag_lit = 1 then web = 4;
+if web_neith = 1 then web = 3;
+if web_dis_lit = 1 then web = 2;
+if web_dis_lot = 1 then web = 1;
+if radio_ag_lot = 1 then radio = 5;
+if radio_ag_lit = 1 then radio = 4;
+if radio_neith = 1 then radio = 3;
+if radio_dis_lit = 1 then radio = 2;
+if radio_dis_lot = 1 then radio = 1;
+if tv_ag_lot = 1 then tv = 5;
+if tv_ag_lit = 1 then tv = 4;
+if tv_neith = 1 then tv = 3;
+if tv_dis_lit = 1 then tv = 2;
+if tv_dis_lot = 1 then tv = 1;
+if first_ag_lot = 1 then first = 5;
+if first_ag_lit = 1 then first = 4;
+if first_neither = 1 then first = 3;
+if first_dis_lit = 1 then first = 2;
+if first_dis_lot = 1 then first = 1;
+if print_ag_lot = 1 then print = 5;
+if print_ag_lit = 1 then print = 4;
+if print_neither = 1 then print = 3;
+if print_dis_lit = 1 then print = 2;
+if print_dis_lot = 1 then print = 1;
+
+/* attach labels to variables */
+label reg = "Are you registered to vote?";
+label trust = "I trust information I read in newspapers";
+label inform = "It is important to be well-informed";
+label econ = "Do you think in the next 12 months the American economy will be better off or worse than it is now?";
+label pol = "In terms of your political outlook, how conservative do you consider yourself to be?";
+label protest = "If I feel strongly about an issue, I would participate in a civil protest";
+label duty = "It is more important to do your duty than to live for your own enjoyment";
+label cause = "I am willing to volunteer my time for a good cause";
+label novel = "I like to pursue a life of challenge, novelty, and change";
+label internet = "I get more and more of my news from the internet";
+label web = "I tend to trust the information on websites that I have heard a lot about";
+label radio = "I rely on radio to keep me informed";
+label tv = "I rely on TV  to keep me informed";
+label first = "For information the first place I look is the internet";
+label print = "I read print news less because of the internet";
+label college_graduate = "Graduated college";
+label member_govern = "Member of government institution";
+label female = "Female";
+label hispanicyes = "Hispanic Origin";
+label married = "Married";
+label news_online_recent = "Have you gotten news online recently?";
+label nbc_recent = "Have you gotten news from NBCNews.com recently?";
+label cnn_recent = "Have you watched CNN recently?";
+
+format reg college_graduate member_govern female hispanicyes married news_online_recent nbc_recent cnn_recent yesno.
+	trust inform econ pol protest duty cause novel internet web radio tv first print myscale.;
+run;
+proc freq data = myvars;
+tables
+reg
+trust
+inform
+econ
+pol
+protest
+duty
+cause
+novel
+internet
+web
+radio
+tv
+first
+print;
+run;
+
+libname mylib "p:\";
+data myfactor;
+set myvars;
+proc factor data = myfactor
+maxiter = 100
+method = principal
+mineigen = 1
+rotate = varimax
+Scree
+Score
+Print
+nfactors = 8
+out = myscores;
+var protest
+duty
+cause
+novel
+internet
+web
+print
+first;
+run;
+
+/* rename factor variables */
+data clusready;
+set myscores;
+rename factor1 = intnews;
+rename factor2 = civengage;
+rename my_id = resp_id;
+run;
+proc fastclus data=clusready out=myclust maxclusters=4;
+var 
+college_graduate
+member_govern
+female
+hispanicyes
+married
+news_online_recent
+nbc_recent
+cnn_recent;
+run;  
+proc contents data=myclust;
+run; 
+Proc sort data= myclust out=mysort;
+By cluster;
+Run;
+Proc means data=mysort;
+By cluster;
+Var college_graduate member_govern female hispanicyes married news_online_recent nbc_recent cnn_recent;
+Run;
