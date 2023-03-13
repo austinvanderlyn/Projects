@@ -1,0 +1,22 @@
+ods html close;
+ods html;
+proc format;
+value Race 1 = "White" 2 = "Black" 3 = "Asian" 4 = "Other";
+value Pizza 1 = "Pizza Hut" 2 = "Dominos" 3 = "Papa Johns" 4 = "Little Caesar's";
+proc import datafile = "P:\Documents\pizzafem truncated.csv"
+	out = work.pizza
+	dbms = CSV
+	replace;
+run;
+proc corresp data = pizza all chi2p;
+	format RESP_RACE Race.;
+	format pizza Pizza.;
+	tables RESP_RACE, pizza;
+
+run;
+proc freq data = pizza;
+	tables RESP_RACE pizza;
+	tables RESP_RACE*pizza / crosslist(stdres);
+	format RESP_RACE Race.;
+	format pizza Pizza.;
+run;
