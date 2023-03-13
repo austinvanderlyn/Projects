@@ -1,0 +1,36 @@
+ods html close;
+ods html;
+proc import datafile = "P:\Documents\missing.csv"
+	out = work.missing
+	dbms = CSV
+	replace;
+run;
+proc print data = missing;
+run;
+proc means data = missing;
+run;
+proc stdize data = missing
+reponly
+method = mean
+out = missing2;
+run;
+proc means data = missing2;
+run;
+proc mi data = missing
+maximum = 5 minimum = 1
+out = missing3;
+fcs reg(v3_miss = v1_miss v2_miss v4_miss v5_miss);
+var v1_miss v2_miss v3_miss v4_miss v5_miss;
+run;
+proc means data = missing3;
+var v3_miss;
+run;
+proc mi data = missing
+maximum = 5 minimum = 1
+out = missing4;
+mcmc;
+var v1_miss v2_miss v3_miss v4_miss v5_miss;
+run;
+proc means data = missing4;
+var v1_miss v2_miss v3_miss v4_miss v5_miss;
+run;
