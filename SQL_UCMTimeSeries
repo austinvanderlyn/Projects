@@ -1,0 +1,21 @@
+ods html close;
+ods html;
+ods graphics on;
+data beer;
+input period consume;
+datalines;
+*
+*
+*
+;
+run;
+proc ucm data = beer;
+id period interval = day;
+model consume;
+irregular;
+level;
+slope;
+cycle;
+Forecast lead = 48 plot = decomp;
+run;
+ods graphics off;
